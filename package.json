@@ -1,0 +1,30 @@
+{
+  "name": "grunfeld",
+  "version": "0.0.1",
+  "types": "dist/index.d.ts",
+  "module": "dist/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "vite build && tsc --emitDeclarationOnly"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ayden94/grünfeld"
+  },
+  "keywords": [
+  ],
+  "author": "Jeong Jinho <wpfekdml@me.com>",
+  "license": "MIT",
+  "description": "",
+  "devDependencies": {
+    "@types/node": "^22.9.0",
+    "@types/react": "^18.3.12",
+    "@vitejs/plugin-react": "^4.3.3",
+    "@typescript-eslint/eslint-plugin": "^7.7.1",
+    "@typescript-eslint/parser": "^7.7.1",
+    "eslint": "^8.57.0",
+    "eslint-plugin-react": "^7.34.1",
+    "typescript": "^5.6.3",
+    "vite": "^5.4.11"
+  }
+}
