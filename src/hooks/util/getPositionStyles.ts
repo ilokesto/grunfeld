@@ -1,4 +1,4 @@
-import { Position, PositionX, PositionY } from "../types/position";
+import { Position, PositionX, PositionY } from "../types";
 
 export function getPositionStyles(position: Position): Record<string, string> {
   const styles: Record<string, string> = {

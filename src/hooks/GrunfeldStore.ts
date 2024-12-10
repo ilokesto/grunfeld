@@ -1,4 +1,4 @@
-type Store = { message: string, type: "error" | "success"} | undefined;
+import type { Store } from "./types";
 
 export class GrunfeldStore {
   static _store: Store;
@@ -9,6 +9,8 @@ export class GrunfeldStore {
   }
 
   static set store(value: Store) {
+    if (value !== undefined && this._store !== undefined) return;
+
     this._store = value;
     this.notifyListeners();
   }
