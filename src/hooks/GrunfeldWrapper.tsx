@@ -4,12 +4,12 @@ import { getPositionStyles } from "./util/getPositionStyles";
 import { Position } from "./types";
 import { useProgress } from "./util/useProgress";
 
-export default function GrunfeldWrapper({children, position = "top-center", timeout}: {children: ReactElement | ReactElement[], position?: Position, timeout?: number}) {
-  const [_, setCount] = useState(0)
+export function GrunfeldWrapper({children, position = "top-center", timeout}: {children: ReactElement | ReactElement[], position?: Position, timeout?: number}) {
+  const [_, rerenderingTrigger] = useState(false)
 
   useEffect(() => {
     const handleStoreChange = () => {
-      setCount((count) => count + 1);
+      rerenderingTrigger((prev) => !prev);
     };
 
     GrunfeldStore.addListener(handleStoreChange);
@@ -29,28 +29,31 @@ export default function GrunfeldWrapper({children, position = "top-center", time
 
 function Grunfeld({position, timeout}: {position: Position, timeout?: number}) {
   const time = GrunfeldStore.store?.timeout ?? timeout
-  const { divRef, progress} = useProgress(time)
+  const { divRef, progress } = useProgress(time)
 
-  return <div 
-    onClick={() => GrunfeldStore.store = undefined}
-    ref={divRef}
-    style={{
-      ...getPositionStyles(position),
-      backgroundColor: "white",
-      overflow: "hidden",
-      padding: "5px 10px",
-      borderRadius: "3px",
-      margin: "10px",
-    }}>{GrunfeldStore.store?.message}
-     <div
-        style={{
-          position: "absolute",
-          bottom: 0,
-          left: 0,
-          height: "3px",
-          backgroundColor: "green",
-          width: `${progress}%`, // progress 값을 기반으로 너비 조정
-        }}
-      />
-      </div>
+  return (
+    <div 
+      onClick={() => GrunfeldStore.store = undefined}
+      ref={divRef}
+      style={{
+        ...getPositionStyles(position),
+        backgroundColor: "white",
+        overflow: "hidden",
+        padding: "5px 10px",
+        borderRadius: "3px",
+        margin: "10px",
+      }}>
+        {GrunfeldStore.store?.message}
+        <div
+          style={{
+            position: "absolute",
+            bottom: 0,
+            left: 0,
+            height: "3px",
+            backgroundColor: GrunfeldStore.store?.type === "error" ? "red" : "green",
+            width: `${progress}%`, // progress 값을 기반으로 너비 조정
+          }}
+        />
+    </div>
+  )
 }
