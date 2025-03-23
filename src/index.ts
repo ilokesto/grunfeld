@@ -1,4 +1,4 @@
-import { GrunfeldWrapper } from "./GrunfeldWrapper";
+import { GrunfeldProvider } from "./GrunfeldProvider";
 import { addDialog, removeDialog, clearStore } from "./GrunfeldStore";
 
-export { GrunfeldWrapper, addDialog, removeDialog, clearStore }
+export { GrunfeldProvider, addDialog, removeDialog, clearStore }

@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import { GrunfeldStore } from "./GrunfeldStore";
+import { Position } from "./types";
 import styles from "./styles/Grunfeld.module.css";
 import clsx from "clsx";
-import { Position } from "./types";
 
-export function GrunfeldWrapper({children, defaultPosition = 'center'}: {children: React.ReactNode, defaultPosition?: Position}) {
+export function GrunfeldProvider({children, defaultPosition = 'center'}: {children: React.ReactNode, defaultPosition?: Position}) {
   const [_, grunfeldRerenderingTrigger] = useState(false)
 
   useEffect(() => {
