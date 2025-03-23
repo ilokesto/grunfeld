@@ -1,5 +1,4 @@
-import { GrunfeldWrapper } from "./hooks/GrunfeldWrapper";
-import { grunfeld } from "./hooks/grunfeld";
-import type { Position } from "./hooks/types";
+import { GrunfeldWrapper } from "./GrunfeldWrapper";
+import { addDialog, removeDialog, clearStore } from "./GrunfeldStore";
 
-export { GrunfeldWrapper, grunfeld, Position }
+export { GrunfeldWrapper, addDialog, removeDialog, clearStore }

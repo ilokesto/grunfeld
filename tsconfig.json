@@ -13,5 +13,5 @@
     "checkJs": true,
     "esModuleInterop": true
   },
-  "include": ["src"]
+  "include": ["src", "dist/Grunfeld.css.d.ts"]
 }

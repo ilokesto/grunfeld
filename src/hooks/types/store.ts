@@ -1,1 +1,0 @@
-export type Store = { message: string, type: "error" | "success"; timeout?: number} | undefined;
