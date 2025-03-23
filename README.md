@@ -1,44 +1,94 @@
-Next.js page router 기준으로 설명합니다.
+# Grunfeld
 
-_app.tsx에 GrunfeldWrapper를 추가해줍니다
+Grunfeld는 React 애플리케이션을 위한 간단하고 가벼운 대화상자(dialog) 관리 라이브러리입니다.
 
-```tsx
-import { GrunfeldWrapper } from "grunfeld"
+## 설치
 
-export default function App({ Component, pageProps }: AppProps) {
-  ...
+```bash
+npm install grunfeld
+# 또는
+yarn add grunfeld
+```
 
+## 특징
+
+- 🚀 간단한 API로 대화상자 관리
+- 🎨 CSS 모듈을 통한 스타일링
+- 📱 위치 설정 가능 ('center' 또는 'bottom')
+- 🔄 다중 대화상자 스택 지원
+
+## 사용법
+
+### 기본 설정
+
+애플리케이션의 최상위 레벨에 `GrunfeldProvider`를 추가하세요:
+
+```jsx
+import { GrunfeldProvider } from 'grunfeld';
+
+function App() {
   return (
-    <GrunfeldWrapper>
-      <Component {...pageProps} />
-    </GrunfeldWrapper>
+    <GrunfeldProvider>
+      {/* 애플리케이션 내용 */}
+    </GrunfeldProvider>
   );
 }
 ```
 
-position props를 통해 토스트가 띄워지는 위치도 조절할 수 있습니다.
+### 대화상자 표시하기
 
-```tsx
-import { GrunfeldWrapper } from "grunfeld"
+```jsx
+import { addDialog } from 'grunfeld';
 
-export default function App({ Component, pageProps }: AppProps) {
-  ...
+function YourComponent() {
+  const showDialog = () => {
+    addDialog({
+      element: <YourDialogContent />,
+      position: 'center' // 또는 'bottom'
+    });
+  };
 
+  return <button onClick={showDialog}>대화상자 열기</button>;
+}
+```
+
+### 대화상자 닫기
+
+```jsx
+import { removeDialog } from 'grunfeld';
+
+function DialogContent() {
   return (
-    <GrunfeldWrapper position="top-right">
-      <Component {...pageProps} />
-    </GrunfeldWrapper>
+    <div>
+      <h2>대화상자 내용</h2>
+      <button onClick={removeDialog}>닫기</button>
+    </div>
   );
 }
 ```
 
-grunfeld를 호출하여 토스트를 띄웁니다. grunfeld에는 success와 error가 있으며, 이에 따라 timeout progress의 색이 달라집니다.
+### 모든 대화상자 제거
 
-```tsx
-import { grunfeld } from 'grunfeld'
+```jsx
+import { clearStore } from 'grunfeld';
 
-<button onClick={() => grunfeld.success("성공해버렸음ㄷㄷ", {timeout: 3000})}>성공</button>
-<button onClick={() => grunfeld.error("실패해버렸음;;", {timeout: 3000})}>성공</button>
+// 모든 대화상자 제거
+clearStore();
 ```
 
-토스트를 클릭하면 얼마나 timeout이 남아있더라도 상관없이 즉시 토스트를 해결합니다.
+## API 참조
+
+### GrunfeldProvider
+
+| 속성 | 타입 | 기본값 | 설명 |
+|------|------|-------|------|
+| children | ReactNode | 필수 | 자식 컴포넌트 |
+| defaultPosition | 'center' \| 'bottom' | 'center' | 대화상자의 기본 위치 |
+
+### 함수
+
+| 함수 | 매개변수 | 설명 |
+|------|---------|------|
+| addDialog | { element: ReactNode, position?: Position } | 새 대화상자 추가 |
+| removeDialog | 없음 | 가장 최근에 추가된 대화상자 제거 |
+| clearStore | 없음 | 모든 대화상자 제거 |
