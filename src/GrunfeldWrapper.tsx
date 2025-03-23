@@ -22,12 +22,7 @@ export function GrunfeldWrapper({children, defaultPosition = 'center'}: {childre
 
       {!GrunfeldStore.isStoreEmpty() &&
         <div className={styles.wrapper}>
-          {Object.entries(GrunfeldStore.store).map(([id, {position, element}]) => 
-            {
-              console.log('position', position)
-              return <Grunfeld key={id} position={position ?? defaultPosition}>{element}</Grunfeld>
-            }
-          )}
+          {GrunfeldStore.store.map(({position, element}, index) =>  <Grunfeld key={index} position={position ?? defaultPosition}>{element}</Grunfeld>)}
         </div>
       }
     </>

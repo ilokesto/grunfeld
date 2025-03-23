@@ -1,25 +1,23 @@
 import { Position } from "./types";
 
-type Store = { [x: PropertyKey]: {element: React.ReactNode, position?: Position} };
+type Store = Array<{element: React.ReactNode, position?: Position}>;
 
 export class GrunfeldStore {
   static _callbacks = new Set<() => void>();
-  static _store: Store = {}
+  static _store: Store = []
 
   static addDialog = (dialog: {element: React.ReactNode, position?: Position}) => {
-    const newId = Object.keys(this.store).length; 
-    this.store[newId] = dialog;
+    this._store.push(dialog);
     this._callbacks.forEach((ls) => ls());
   }
 
   static removeDialog = () => {
-    const latestId = Object.keys(this.store).length - 1;
-    delete this.store[latestId];
+    this._store.pop();
     this._callbacks.forEach((ls) => ls());
   }
 
   static clearStore = () => {
-    this._store = {};
+    this._store = [];
     this._callbacks.forEach((ls) => ls());
   }
 
