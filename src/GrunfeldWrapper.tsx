@@ -21,7 +21,7 @@ export function GrunfeldWrapper({children, defaultPosition = 'center'}: {childre
       {children}
 
       {!GrunfeldStore.isStoreEmpty() &&
-        <div className={clsx(styles.wrapper)}>
+        <div className={styles.wrapper}>
           {Object.entries(GrunfeldStore.store).map(([id, {position, element}]) => 
             {
               console.log('position', position)
@@ -37,7 +37,7 @@ export function GrunfeldWrapper({children, defaultPosition = 'center'}: {childre
 function Grunfeld({children, position}: {children: React.ReactNode, position: Position }) {
   return (
     <div
-      className={clsx(styles.backdrop)}
+      className={styles.backdrop}
       onClick={e => e.target === e.currentTarget && GrunfeldStore.removeDialog()}
     >
       <div className={clsx(styles.dialog, styles[position])}>
