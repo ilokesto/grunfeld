@@ -38,8 +38,9 @@ export class GrunfeldStore {
   }
 }
 
-const addDialog = GrunfeldStore.addDialog;
-const removeDialog = GrunfeldStore.removeDialog;
-const clearStore = GrunfeldStore.clearStore;
 
-export { addDialog, removeDialog, clearStore };
+export default {
+  add: GrunfeldStore.addDialog,
+  remove: GrunfeldStore.removeDialog,
+  clear: GrunfeldStore.clearStore
+}

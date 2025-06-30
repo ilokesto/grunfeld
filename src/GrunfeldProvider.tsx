@@ -35,7 +35,7 @@ function Grunfeld({children, position}: {children: React.ReactNode, position: Po
       className={styles.backdrop}
       onClick={e => e.target === e.currentTarget && GrunfeldStore.removeDialog()}
     >
-      <div className={clsx(styles.dialog, styles[position])}>
+      <div className={clsx(styles.dialog, styles[position])} role="dialog">
         {children}
       </div>
     </div>

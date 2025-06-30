@@ -19,15 +19,14 @@
 .dialog {
   position: fixed;
   left: 50%;
-  transform: translateY(-50%);
 }
 
 .center {
   top: 50%;
-  transform: translateX(-50%);
+  transform: translate(-50% , -50%);
 }
 
 .bottom {
   bottom: 0;
-  transform: translateX(0);
+  transform: translate(0, -50%);
 }
