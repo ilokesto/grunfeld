@@ -1,11 +1,17 @@
 import { useEffect, useState } from "react";
-import { GrunfeldStore } from "./GrunfeldStore";
+import { IGrunfeldProps, GrunfeldStore } from "./GrunfeldStore";
 import { Position } from "./types";
-import styles from "./styles/Grunfeld.module.css";
-import clsx from "clsx";
 
-export function GrunfeldProvider({children, defaultPosition = 'center'}: {children: React.ReactNode, defaultPosition?: Position}) {
-  const [_, grunfeldRerenderingTrigger] = useState(false)
+export function GrunfeldProvider({
+  children,
+  defaultPosition = "center",
+  defaultDismiss = true,
+}: {
+  children: React.ReactNode;
+  defaultPosition?: Position;
+  defaultDismiss?: boolean;
+}) {
+  const [_, grunfeldRerenderingTrigger] = useState(false);
 
   useEffect(() => {
     const handleStoreChange = () => {
@@ -20,23 +26,59 @@ export function GrunfeldProvider({children, defaultPosition = 'center'}: {childr
     <>
       {children}
 
-      {!GrunfeldStore.isStoreEmpty() &&
-        <div className={styles.wrapper}>
-          {GrunfeldStore.store.map(({position, element}, index) =>  <Grunfeld key={index} position={position ?? defaultPosition}>{element}</Grunfeld>)}
+      {!GrunfeldStore.isStoreEmpty() && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            bottom: 0,
+            right: 0,
+            left: 0,
+            background: "transparent",
+          }}
+        >
+          {GrunfeldStore.store.map(
+            ({ position, element, lightDismiss }, index) => (
+              <Grunfeld
+                key={index}
+                position={position ?? defaultPosition}
+                element={element}
+                lightDismiss={lightDismiss ?? defaultDismiss}
+              />
+            )
+          )}
         </div>
-      }
+      )}
     </>
   );
 }
 
-function Grunfeld({children, position}: {children: React.ReactNode, position: Position }) {
+function Grunfeld({ element, position, lightDismiss }: IGrunfeldProps) {
   return (
     <div
-      className={styles.backdrop}
-      onClick={e => e.target === e.currentTarget && GrunfeldStore.removeDialog()}
+      style={{
+        position: "fixed",
+        top: 0,
+        bottom: 0,
+        right: 0,
+        left: 0,
+        background: "rgba(0, 0, 0, 0.3)",
+      }}
+      onClick={(e) =>
+        e.target === e.currentTarget && lightDismiss && GrunfeldStore.remove()
+      }
     >
-      <div className={clsx(styles.dialog, styles[position])} role="dialog">
-        {children}
+      <div
+        style={{
+          position: "fixed",
+          left: "50%",
+          top: position === "center" ? "50%" : undefined,
+          bottom: position === "bottom" ? "0" : undefined,
+          transform: `translate(${position === "center" ? "-50%" : "0"}, -50%)`,
+        }}
+        role="dialog"
+      >
+        {element}
       </div>
     </div>
   );
