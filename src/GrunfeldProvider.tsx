@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { IGrunfeldProps, GrunfeldStore } from "./GrunfeldStore";
-import { Position } from "./types";
+import { GrunfeldStore } from "./GrunfeldStore";
+import { isValidGrunfeldElement, Position } from "./types";
 
 export function GrunfeldProvider({
   children,
@@ -37,23 +37,37 @@ export function GrunfeldProvider({
             background: "transparent",
           }}
         >
-          {GrunfeldStore.store.map(
-            ({ position, element, lightDismiss }, index) => (
+          {GrunfeldStore.store.map((props, index) => {
+            const { element, position, lightDismiss } = isValidGrunfeldElement(
+              props
+            )
+              ? props
+              : {};
+
+            return (
               <Grunfeld
                 key={index}
                 position={position ?? defaultPosition}
                 element={element}
                 lightDismiss={lightDismiss ?? defaultDismiss}
               />
-            )
-          )}
+            );
+          })}
         </div>
       )}
     </>
   );
 }
 
-function Grunfeld({ element, position, lightDismiss }: IGrunfeldProps) {
+function Grunfeld({
+  element,
+  position,
+  lightDismiss,
+}: {
+  element: React.ReactNode;
+  position?: Position;
+  lightDismiss?: boolean;
+}) {
   return (
     <div
       style={{

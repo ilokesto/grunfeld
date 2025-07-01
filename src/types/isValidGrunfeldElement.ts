@@ -1,13 +1,4 @@
-export type Position = "center" | "bottom";
-
-export type GrunfeldProps =
-  | {
-      element: React.ReactNode;
-      position?: Position;
-      lightDismiss?: boolean;
-      dismissCallback?: () => unknown;
-    }
-  | React.ReactNode;
+import { GrunfeldProps, Position } from ".";
 
 export function isValidGrunfeldElement(props: GrunfeldProps): props is {
   element: React.ReactNode;

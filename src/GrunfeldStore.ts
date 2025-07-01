@@ -1,80 +1,65 @@
-import { Position } from "./types";
+import { GrunfeldProps, isValidGrunfeldElement, Position } from "./types";
+import { isValidElement } from "react";
 
-export interface IGrunfeldProps {
-  element: React.ReactNode;
-  position?: Position;
-  lightDismiss?: boolean;
-  dismissCallback?: () => unknown;
+type Store = Array<GrunfeldProps>;
+
+function createGrunfeldStore() {
+  let callbacks = new Set<() => void>();
+  let store: Store = [];
+
+  return {
+    store,
+    add(dialog: GrunfeldProps) {
+      store.push(dialog);
+      callbacks.forEach((ls) => ls());
+    },
+    addAsync<T>(
+      dialog: (removeWith: (data: T) => T) => GrunfeldProps
+    ): Promise<T> {
+      return new Promise<T>((resolve) => {
+        let dialogProps: GrunfeldProps;
+        const removeWith = (data: T) => {
+          const idx = store.indexOf(dialogProps);
+          if (idx !== -1) {
+            store.splice(idx, 1);
+            callbacks.forEach((ls) => ls());
+          }
+          resolve(data);
+          return data;
+        };
+        dialogProps = dialog(removeWith);
+        store.push(dialogProps);
+        callbacks.forEach((ls) => ls());
+      });
+    },
+    remove() {
+      const props = store.pop();
+      if (props && isValidGrunfeldElement(props) && props.dismissCallback) {
+        props.dismissCallback();
+      }
+      callbacks.forEach((ls) => ls());
+    },
+    clear() {
+      store.forEach((props) => {
+        if (props && isValidGrunfeldElement(props) && props.dismissCallback)
+          props.dismissCallback();
+      });
+      store = [];
+      callbacks.forEach((ls) => ls());
+    },
+    addListener(listener: () => void) {
+      callbacks.add(listener);
+    },
+    removeListener(listener: () => void) {
+      callbacks.delete(listener);
+    },
+    isStoreEmpty() {
+      return store.length === 0;
+    },
+  };
 }
 
-type Store = Array<IGrunfeldProps>;
-
-export class GrunfeldStore {
-  static _callbacks = new Set<() => void>();
-  static _store: Store = [];
-
-  static add = (dialog: IGrunfeldProps) => {
-    GrunfeldStore._store.push(dialog);
-    GrunfeldStore._callbacks.forEach((ls) => ls());
-  };
-
-  static addAsync = <T>(
-    dialog: (removeWith: (data: T) => T) => IGrunfeldProps
-  ): Promise<T> => {
-    return new Promise<T>((resolve) => {
-      const removeWith = (data: T) => {
-        // dialog로 생성된 props를 스토어에서 제거
-        GrunfeldStore._store = GrunfeldStore._store.filter(
-          (d) => d !== dialogProps
-        );
-        GrunfeldStore._callbacks.forEach((ls) => ls());
-        // remove가 호출될 때 data를 resolve
-        resolve(data);
-        return data;
-      };
-
-      const dialogProps = dialog(removeWith);
-      GrunfeldStore._store.push(dialogProps);
-      GrunfeldStore._callbacks.forEach((ls) => ls());
-    });
-  };
-
-  static remove = () => {
-    const props = GrunfeldStore._store.pop();
-
-    if (props?.dismissCallback) props.dismissCallback();
-
-    GrunfeldStore._callbacks.forEach((ls) => ls());
-  };
-
-  static clear = () => {
-    GrunfeldStore._store.forEach((props) => {
-      if (props.dismissCallback) props.dismissCallback();
-    });
-
-    GrunfeldStore._store = [];
-
-    GrunfeldStore._callbacks.forEach((ls) => ls());
-  };
-
-  static get store() {
-    return GrunfeldStore._store;
-  }
-
-  static addListener(listener: () => void) {
-    GrunfeldStore._callbacks.add(listener);
-  }
-
-  static removeListener(listener: Function) {
-    GrunfeldStore._callbacks = new Set(
-      Array.from(GrunfeldStore._callbacks).filter((l) => l !== listener)
-    );
-  }
-
-  static isStoreEmpty() {
-    return Object.keys(GrunfeldStore.store).length === 0;
-  }
-}
+export const GrunfeldStore = createGrunfeldStore();
 
 export default {
   add: GrunfeldStore.add,
