@@ -38,7 +38,7 @@ export function GrunfeldProvider({
               props
             )
               ? props
-              : {};
+              : { element: props };
 
             return (
               <Grunfeld
