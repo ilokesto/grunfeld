@@ -1,16 +1,12 @@
 import { useEffect, useState } from "react";
 import { GrunfeldStore } from "./GrunfeldStore";
-import { isValidGrunfeldElement, Position } from "./types";
+import { GrunfeldProviderProps, isValidGrunfeldElement } from "./types";
+import { Grunfeld } from "./Grunfeld";
 
 export function GrunfeldProvider({
   children,
-  defaultPosition = "center",
-  defaultDismiss = true,
-}: {
-  children: React.ReactNode;
-  defaultPosition?: Position;
-  defaultDismiss?: boolean;
-}) {
+  options = { defaultPosition: "center", defaultDismiss: true },
+}: GrunfeldProviderProps) {
   const [_, grunfeldRerenderingTrigger] = useState(false);
 
   useEffect(() => {
@@ -47,53 +43,15 @@ export function GrunfeldProvider({
             return (
               <Grunfeld
                 key={index}
-                position={position ?? defaultPosition}
+                position={position ?? options.defaultPosition}
                 element={element}
-                lightDismiss={lightDismiss ?? defaultDismiss}
+                lightDismiss={lightDismiss ?? options.defaultDismiss}
+                backdropStyle={options.backdropStyle}
               />
             );
           })}
         </div>
       )}
     </>
-  );
-}
-
-function Grunfeld({
-  element,
-  position,
-  lightDismiss,
-}: {
-  element: React.ReactNode;
-  position?: Position;
-  lightDismiss?: boolean;
-}) {
-  return (
-    <div
-      style={{
-        position: "fixed",
-        top: 0,
-        bottom: 0,
-        right: 0,
-        left: 0,
-        background: "rgba(0, 0, 0, 0.3)",
-      }}
-      onClick={(e) =>
-        e.target === e.currentTarget && lightDismiss && GrunfeldStore.remove()
-      }
-    >
-      <div
-        style={{
-          position: "fixed",
-          left: "50%",
-          top: position === "center" ? "50%" : undefined,
-          bottom: position === "bottom" ? "0" : undefined,
-          transform: `translate(${position === "center" ? "-50%" : "0"}, -50%)`,
-        }}
-        role="dialog"
-      >
-        {element}
-      </div>
-    </div>
   );
 }

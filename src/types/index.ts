@@ -17,3 +17,12 @@ export function isValidGrunfeldElement(props: GrunfeldProps): props is {
 } {
   return typeof props === "object" && props !== null && "element" in props;
 }
+
+export type GrunfeldProviderProps = {
+  children: React.ReactNode;
+  options?: {
+    defaultPosition?: Position;
+    defaultDismiss?: boolean;
+    backdropStyle?: React.CSSProperties;
+  };
+};
