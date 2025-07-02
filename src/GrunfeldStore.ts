@@ -1,5 +1,4 @@
-import { GrunfeldProps, isValidGrunfeldElement, Position } from "./types";
-import { isValidElement } from "react";
+import { GrunfeldProps, isValidGrunfeldElement } from "./types";
 
 type Store = Array<GrunfeldProps>;
 
