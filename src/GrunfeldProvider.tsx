@@ -7,7 +7,7 @@ export function GrunfeldProvider({
   children,
   options = { defaultPosition: "center", defaultDismiss: true },
 }: GrunfeldProviderProps) {
-  const [_, grunfeldRerenderingTrigger] = useState(false);
+  const [, grunfeldRerenderingTrigger] = useState(false);
 
   useEffect(() => {
     const handleStoreChange = () => {

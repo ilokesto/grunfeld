@@ -33,9 +33,11 @@ function createGrunfeldStore() {
     },
     remove() {
       const props = store.pop();
+
       if (props && isValidGrunfeldElement(props) && props.dismissCallback) {
         props.dismissCallback();
       }
+
       callbacks.forEach((ls) => ls());
     },
     clear() {
@@ -65,4 +67,5 @@ export default {
   addAsync: GrunfeldStore.addAsync,
   remove: GrunfeldStore.remove,
   clear: GrunfeldStore.clear,
+  store: GrunfeldStore.store,
 };
