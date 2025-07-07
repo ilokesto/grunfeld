@@ -27,16 +27,7 @@ function createGrunfeldStore() {
   };
 
   return {
-    add(dialog: () => GrunfeldProps) {
-      if (!hashManager.tryAddDialog(dialog())) {
-        return;
-      }
-
-      store.push(dialog());
-      notifyCallbacks();
-    },
-
-    addAsync<T>(dialogFactory: DialogFactory<T>): Promise<T> {
+    add<T>(dialogFactory: DialogFactory<T>): Promise<T> {
       return new Promise<T>((resolve, reject) => {
         try {
           let dialogProps: GrunfeldProps;
