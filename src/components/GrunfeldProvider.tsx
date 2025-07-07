@@ -1,5 +1,5 @@
-import { useMemo } from "react";
-import { useGrunfeldStore } from "../hooks/useGrunfeldStore";
+import { useMemo, useSyncExternalStore } from "react";
+import { GrunfeldStore } from "../store/GrunfeldStore";
 import { GrunfeldProviderProps, isValidGrunfeldElement } from "../types";
 import { Grunfeld } from "./Grunfeld";
 
@@ -7,7 +7,11 @@ export function GrunfeldProvider({
   children,
   options = { defaultPosition: "center", defaultLightDismiss: true },
 }: GrunfeldProviderProps) {
-  const { store, hasDialogs } = useGrunfeldStore();
+  const store = useSyncExternalStore(
+    GrunfeldStore.subscribe,
+    GrunfeldStore.getStore,
+    GrunfeldStore.getStore
+  );
 
   // 백드롭 스타일 메모이제이션
   const backdropContainerStyle = useMemo(
@@ -50,7 +54,7 @@ export function GrunfeldProvider({
     <>
       {children}
 
-      {hasDialogs && (
+      {store.length > 0 && (
         <div style={backdropContainerStyle}>{renderedDialogs}</div>
       )}
     </>
