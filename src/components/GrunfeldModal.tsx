@@ -8,7 +8,7 @@ export function GrunfeldModal({
   position = "center",
   lightDismiss,
   backdropStyle,
-}: GrunfeldElementProps & { backdropStyle?: BackdropStyle }) {
+}: GrunfeldElementProps & BackdropStyle) {
   const dialogRef = useRef<HTMLDivElement>(null);
 
   // ESC 키로 대화상자 닫기

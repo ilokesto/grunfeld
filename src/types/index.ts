@@ -9,8 +9,9 @@ export type Position =
   | "bottom-center"
   | "bottom-right";
 
-export type BackdropStyle =
-  `rgba(${number}, ${number}, ${number}, 0.${number})`;
+export type BackdropStyle = {
+  backdropStyle?: `rgba(${number}, ${number}, ${number}, 0.${number})`;
+};
 
 export interface GrunfeldElementProps {
   element: React.ReactNode;
@@ -105,6 +106,5 @@ export type GrunfeldProviderProps = {
     defaultPosition?: Position;
     defaultLightDismiss?: boolean;
     defaultRenderMode?: "top-layer" | "inline";
-    backdropStyle?: BackdropStyle;
-  };
+  } & BackdropStyle;
 };

@@ -8,9 +8,7 @@ export function Grunfeld({
   lightDismiss = true,
   backdropStyle,
   renderMode = "inline",
-}: GrunfeldElementProps & {
-  backdropStyle?: BackdropStyle;
-}) {
+}: GrunfeldElementProps & BackdropStyle) {
   // useTopLayer에 따라 조건부 렌더링
   if (renderMode === "top-layer") {
     return (

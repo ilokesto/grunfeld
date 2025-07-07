@@ -8,7 +8,7 @@ export function GrunfeldDialog({
   position = "center",
   lightDismiss,
   backdropStyle,
-}: GrunfeldElementProps & { backdropStyle?: BackdropStyle }) {
+}: GrunfeldElementProps & BackdropStyle) {
   const dialogRef = useRef<HTMLDialogElement>(null);
 
   // Dialog를 top-layer에 표시하고 이벤트 관리
