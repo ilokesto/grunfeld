@@ -27,12 +27,12 @@ function createGrunfeldStore() {
   };
 
   return {
-    add(dialog: GrunfeldProps) {
-      if (!hashManager.tryAddDialog(dialog)) {
+    add(dialog: () => GrunfeldProps) {
+      if (!hashManager.tryAddDialog(dialog())) {
         return;
       }
 
-      store.push(dialog);
+      store.push(dialog());
       notifyCallbacks();
     },
 
