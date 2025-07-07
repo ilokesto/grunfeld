@@ -1,3 +1,5 @@
+Language : EN | [KR](./README.md)
+
 # Grunfeld
 
 Grunfeld is a **simple and intuitive dialog management library for React applications**. You can implement modals, alerts, and confirmation dialogs with just a few lines of code, without complex state management.
@@ -610,5 +612,5 @@ type Position = `${PositionY}-${PositionX}` | "center";
 
 ## 🌐 Browser Compatibility
 
-**Inline 렌더링:** All modern browsers + IE 11+
-**Top-layer 렌더링:** Chrome 37+, Firefox 98+, Safari 15.4+, Edge 79+
+**Inline rendering:** All modern browsers + IE 11+
+**Top-layer rendering:** Chrome 37+, Firefox 98+, Safari 15.4+, Edge 79+
