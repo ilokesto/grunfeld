@@ -5,7 +5,11 @@ import { Grunfeld } from "./Grunfeld";
 
 export function GrunfeldProvider({
   children,
-  options = { defaultPosition: "center", defaultLightDismiss: true },
+  options = {
+    defaultPosition: "center",
+    defaultLightDismiss: true,
+    defaultRenderMode: "inline",
+  },
 }: GrunfeldProviderProps) {
   const store = useSyncExternalStore(
     GrunfeldStore.subscribe,
@@ -29,9 +33,8 @@ export function GrunfeldProvider({
   // 대화상자 렌더링 최적화
   const renderedDialogs = useMemo(() => {
     return store.map((props, index) => {
-      const { element, position, lightDismiss } = isValidGrunfeldElement(props)
-        ? props
-        : { element: props };
+      const { element, position, lightDismiss, renderMode } =
+        isValidGrunfeldElement(props) ? props : { element: props };
 
       return (
         <Grunfeld
@@ -40,6 +43,7 @@ export function GrunfeldProvider({
           element={element}
           lightDismiss={lightDismiss ?? options.defaultLightDismiss}
           backdropStyle={options.backdropStyle}
+          renderMode={renderMode ?? options.defaultRenderMode}
         />
       );
     });

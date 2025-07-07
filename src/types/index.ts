@@ -5,6 +5,7 @@ export interface GrunfeldElementProps {
   position?: Position;
   lightDismiss?: boolean;
   dismissCallback?: () => unknown;
+  renderMode?: "top-layer" | "inline";
 }
 export type GrunfeldProps = GrunfeldElementProps | React.ReactNode;
 
@@ -91,6 +92,7 @@ export type GrunfeldProviderProps = {
   options?: {
     defaultPosition?: Position;
     defaultLightDismiss?: boolean;
+    defaultRenderMode?: "top-layer" | "inline";
     backdropStyle?: React.CSSProperties;
   };
 };
