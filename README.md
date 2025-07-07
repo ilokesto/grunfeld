@@ -12,7 +12,6 @@ Grunfeld는 React 애플리케이션을 위한 **간단하고 가벼운 대화�
 - 🎨 **커스텀 스타일링**: 백드롭 스타일부터 개별 대화상자 스타일까지 자유롭게 커스터마이징 가능합니다
 - 👆 **직관적인 UX**: 배경 클릭으로 닫기, 자동 포커스 관리 등 사용자 경험을 고려한 기능들을 제공합니다
 - ⚡ **Top-layer 지원**: 네이티브 HTML `<dialog>` 요소를 사용한 최상위 레이어 렌더링 지원
-- 🏗 **모듈형 아키텍처**: 용도에 맞게 분리된 컴포넌트로 유연한 사용 가능
 
 ## 설치
 
@@ -21,8 +20,6 @@ npm install grunfeld
 # 또는
 yarn add grunfeld
 ```
-
-Grunfeld는 React 애플리케이션을 위한 간단하고 가벼운 대화상자(dialog) 관리 라이브러리입니다.
 
 ## 사용법
 
@@ -60,20 +57,20 @@ import { grunfeld } from "grunfeld";
 
 function YourComponent() {
   const showDialog = () => {
-    grunfeld.add({
+    grunfeld.add(() => ({
       element: <div>안녕하세요!</div>,
       position: "center",
       lightDismiss: true,
       renderMode: "inline", // 기본 z-index 방식
-    });
+    }));
   };
 
   const showTopLayerDialog = () => {
-    grunfeld.add({
+    grunfeld.add(() => ({
       element: <div>Top-layer 대화상자!</div>,
       position: "center",
       renderMode: "top-layer", // 네이티브 dialog 요소 사용
-    });
+    }));
   };
 
   return (
@@ -85,7 +82,7 @@ function YourComponent() {
 }
 ```
 
-### 비동기 대화상자 (사용자 응답 대기)
+### 사용자 응답을 기다리는 대화상자
 
 사용자의 선택이나 입력을 기다려야 할 때 사용합니다. Promise를 반환하므로 async/await 패턴으로 사용자의 응답을 처리할 수 있습니다:
 
@@ -94,7 +91,7 @@ import { grunfeld } from "grunfeld";
 
 function YourComponent() {
   const showConfirmDialog = async () => {
-    const result = await grunfeld.addAsync((removeWith) => ({
+    const result = await grunfeld.add<boolean>((removeWith) => ({
       element: (
         <div>
           <p>정말 삭제하시겠습니까?</p>
@@ -116,20 +113,67 @@ function YourComponent() {
 }
 ```
 
-### 간단한 대화상자 (ReactNode만 전달)
+### 비동기 처리가 포함된 대화상자
 
-복잡한 설정 없이 JSX 요소나 문자열을 직접 전달하여 빠르게 대화상자를 표시할 수 있습니다:
+대화상자 내부에서 비동기 작업(API 호출 등)을 수행할 때도 사용할 수 있습니다:
 
 ```tsx
 import { grunfeld } from "grunfeld";
 
 function YourComponent() {
-  const showSimpleDialog = () => {
-    // ReactNode를 직접 전달할 수 있습니다
-    grunfeld.add(<div>간단한 메시지</div>);
+  const showAsyncDialog = async () => {
+    const result = await grunfeld.add<string>(async (removeWith) => {
+      // 비동기 작업 수행 (예: 데이터 로딩)
+      const data = await fetch("/api/user").then((res) => res.json());
+
+      return {
+        element: (
+          <div>
+            <p>사용자 이름: {data.name}</p>
+            <input
+              type="text"
+              placeholder="메시지를 입력하세요"
+              onChange={(e) => {
+                if (e.target.value) {
+                  removeWith(e.target.value);
+                }
+              }}
+            />
+          </div>
+        ),
+        position: "center",
+      };
+    });
+
+    console.log("사용자가 입력한 메시지:", result);
   };
 
-  return <button onClick={showSimpleDialog}>간단한 대화상자</button>;
+  return <button onClick={showAsyncDialog}>비동기 대화상자</button>;
+}
+```
+
+### 간단한 사용법 (void 타입)
+
+사용자 응답이 필요 없는 간단한 알림이나 정보 표시용 대화상자의 경우 타입 매개변수를 생략할 수 있습니다:
+
+```tsx
+import { grunfeld } from "grunfeld";
+
+function YourComponent() {
+  const showSimpleAlert = () => {
+    // 타입 매개변수를 생략하면 void로 처리됩니다
+    grunfeld.add((removeWith) => ({
+      element: (
+        <div>
+          <p>저장이 완료되었습니다!</p>
+          <button onClick={() => removeWith()}>확인</button>
+        </div>
+      ),
+      position: "center",
+    }));
+  };
+
+  return <button onClick={showSimpleAlert}>알림 표시</button>;
 }
 ```
 
@@ -169,39 +213,51 @@ grunfeld.clear();
 
 ### grunfeld 객체
 
-#### `grunfeld.add(dialog)`
+#### `grunfeld.add<T = void>(dialogFactory)`
 
-새로운 대화상자를 추가합니다.
+새로운 대화상자를 추가합니다. 기존의 `add`와 `addAsync` 기능이 통합된 메서드입니다.
 
 **매개변수:**
 
-- `dialog: GrunfeldProps` - 대화상자 설정
+- `dialogFactory: (removeWith: (data: T) => T) => GrunfeldProps | Promise<GrunfeldProps>` - 대화상자 팩토리 함수
+
+**반환값:**
+
+- `T extends void ? void : Promise<T>` - `T`가 `void`인 경우 아무것도 반환하지 않고, 그렇지 않으면 `Promise<T>`를 반환
+
+**사용 예시:**
+
+```typescript
+// void 타입 (응답 불필요)
+grunfeld.add((removeWith) => ({
+  element: <div>알림</div>,
+}));
+
+// 특정 타입 응답 대기
+const result = await grunfeld.add<string>((removeWith) => ({
+  element: <input onChange={(e) => removeWith(e.target.value)} />,
+}));
+
+// 비동기 처리
+const result = await grunfeld.add<UserData>(async (removeWith) => {
+  const userData = await fetchUserData();
+  return {
+    element: <UserProfile data={userData} onSave={removeWith} />,
+  };
+});
+```
 
 **GrunfeldProps:**
 
 ```typescript
-type GrunfeldProps =
-  | {
-      element: React.ReactNode;
-      position?: "center" | "bottom";
-      lightDismiss?: boolean;
-      dismissCallback?: () => unknown;
-      renderMode?: "inline" | "top-layer";
-    }
-  | React.ReactNode;
+type GrunfeldProps = {
+  element: React.ReactNode;
+  position?: "center" | "bottom";
+  lightDismiss?: boolean;
+  dismissCallback?: () => unknown;
+  renderMode?: "inline" | "top-layer";
+};
 ```
-
-#### `grunfeld.addAsync<T>(dialog)`
-
-비동기 대화상자를 추가하고 사용자 응답을 기다립니다.
-
-**매개변수:**
-
-- `dialog: (removeWith: (data: T) => T) => GrunfeldProps` - 대화상자 팩토리 함수
-
-**반환값:**
-
-- `Promise<T>` - 사용자가 `removeWith`를 호출할 때 전달한 데이터
 
 #### `grunfeld.remove()`
 
@@ -229,13 +285,13 @@ grunfeld.remove(); // A가 닫힘
 대화상자가 닫힐 때 특정 로직을 실행해야 하는 경우 `dismissCallback`을 사용합니다. 이는 정리 작업, 상태 업데이트, 분석 이벤트 전송 등에 유용합니다:
 
 ```tsx
-grunfeld.add({
+grunfeld.add(() => ({
   element: <MyDialog />,
   dismissCallback: () => {
     console.log("대화상자가 닫혔습니다");
     // 정리 작업 수행
   },
-});
+}));
 ```
 
 ### 위치별 대화상자
@@ -244,16 +300,16 @@ grunfeld.add({
 
 ```tsx
 // 중앙에 표시
-grunfeld.add({
+grunfeld.add(() => ({
   element: <CenterDialog />,
   position: "center",
-});
+}));
 
 // 하단에 표시 (바텀 시트 스타일)
-grunfeld.add({
+grunfeld.add(() => ({
   element: <BottomSheet />,
   position: "bottom",
-});
+}));
 ```
 
 ### Top-layer vs Inline 렌더링
@@ -265,10 +321,10 @@ Grunfeld는 두 가지 렌더링 방식을 제공합니다:
 기존의 z-index 기반 방식으로, 모든 브라우저에서 안정적으로 동작합니다:
 
 ```tsx
-grunfeld.add({
+grunfeld.add(() => ({
   element: <MyDialog />,
   renderMode: "inline", // z-index 사용
-});
+}));
 ```
 
 **특징:**
@@ -283,10 +339,10 @@ grunfeld.add({
 HTML 네이티브 `<dialog>` 요소를 사용하여 최상위 레이어에 렌더링합니다:
 
 ```tsx
-grunfeld.add({
+grunfeld.add(() => ({
   element: <MyDialog />,
   renderMode: "top-layer", // 네이티브 dialog 사용
-});
+}));
 ```
 
 **특징:**
@@ -307,54 +363,6 @@ grunfeld.add({
 | z-index 충돌이 있는 환경 | `top-layer` | 최상위 레이어 보장       |
 | 고성능이 필요한 경우     | `top-layer` | 브라우저 네이티브 최적화 |
 | 레거시 브라우저 지원     | `inline`    | 광범위한 호환성          |
-
-### 개별 컴포넌트 사용
-
-고급 사용자를 위해 개별 컴포넌트를 직접 사용할 수도 있습니다:
-
-```tsx
-import { GrunfeldDialog, GrunfeldModal } from "grunfeld";
-
-function CustomDialog() {
-  return (
-    <>
-      {/* Top-layer 전용 컴포넌트 */}
-      <GrunfeldDialog
-        element={<div>네이티브 dialog</div>}
-        position="center"
-        lightDismiss={true}
-      />
-
-      {/* Z-index 전용 컴포넌트 */}
-      <GrunfeldModal
-        element={<div>Z-index modal</div>}
-        position="bottom"
-        lightDismiss={false}
-      />
-    </>
-  );
-}
-```
-
-### 조건부 렌더링 모드
-
-환경에 따라 동적으로 렌더링 모드를 선택할 수 있습니다:
-
-```tsx
-function SmartDialog() {
-  const showDialog = () => {
-    // 브라우저 지원 여부에 따라 자동 선택
-    const supportsDialog = "HTMLDialogElement" in window;
-
-    grunfeld.add({
-      element: <MyDialog />,
-      renderMode: supportsDialog ? "top-layer" : "inline",
-    });
-  };
-
-  return <button onClick={showDialog}>스마트 대화상자</button>;
-}
-```
 
 ## 브라우저 호환성
 

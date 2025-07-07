@@ -5,7 +5,9 @@ import { hashManager } from "./GrunfeldHashManager";
 type Store = Array<GrunfeldProps>;
 type Callback = () => void;
 type RemoveWithFunction<T> = (data: T) => T;
-type DialogFactory<T> = (removeWith: RemoveWithFunction<T>) => GrunfeldProps;
+type DialogFactory<T> = (
+  removeWith: RemoveWithFunction<T>
+) => GrunfeldProps | Promise<GrunfeldProps>;
 
 function createGrunfeldStore() {
   const callbacks = new Set<Callback>();
@@ -27,8 +29,10 @@ function createGrunfeldStore() {
   };
 
   return {
-    add<T>(dialogFactory: DialogFactory<T>): Promise<T> {
-      return new Promise<T>((resolve, reject) => {
+    add<T>(
+      dialogFactory: DialogFactory<T>
+    ): T extends void ? void : Promise<T> {
+      return new Promise<T>(async (resolve, reject) => {
         try {
           let dialogProps: GrunfeldProps;
 
@@ -38,6 +42,7 @@ function createGrunfeldStore() {
               if (index !== -1) {
                 hashManager.removeDialog(dialogProps);
                 store.splice(index, 1);
+                dismissDialog(dialogProps);
                 notifyCallbacks();
               }
               resolve(data);
@@ -49,7 +54,7 @@ function createGrunfeldStore() {
             }
           };
 
-          dialogProps = dialogFactory(removeWith);
+          dialogProps = await dialogFactory(removeWith);
 
           if (!hashManager.tryAddDialog(dialogProps)) {
             logger.warn("Duplicate async dialog prevented");
@@ -60,10 +65,10 @@ function createGrunfeldStore() {
           store.push(dialogProps);
           notifyCallbacks();
         } catch (error) {
-          logger.error("Error in addAsync", error);
+          logger.error("Error in add", error);
           reject(error);
         }
-      });
+      }) as any;
     },
 
     remove() {
