@@ -1,6 +1,6 @@
 {
   "name": "grunfeld",
-  "version": "0.0.19",
+  "version": "0.0.20",
   "module": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
