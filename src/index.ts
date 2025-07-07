@@ -1,4 +1,8 @@
-import { GrunfeldProvider } from "./GrunfeldProvider";
-import grunfeld from "./GrunfeldStore";
+import { GrunfeldProvider } from "./components/GrunfeldProvider";
+import grunfeld from "./store/GrunfeldStore";
 
-export { GrunfeldProvider, grunfeld };
+// 타입들도 export
+export type { GrunfeldElementProps, GrunfeldProps, Position } from "./types";
+
+// 주요 컴포넌트와 스토어 export
+export { grunfeld, GrunfeldProvider };
