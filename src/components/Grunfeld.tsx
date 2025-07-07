@@ -1,4 +1,4 @@
-import { GrunfeldElementProps } from "../types";
+import { BackdropStyle, GrunfeldElementProps } from "../types";
 import { GrunfeldDialog } from "./GrunfeldDialog";
 import { GrunfeldModal } from "./GrunfeldModal";
 
@@ -9,7 +9,7 @@ export function Grunfeld({
   backdropStyle,
   renderMode = "inline",
 }: GrunfeldElementProps & {
-  backdropStyle?: React.CSSProperties;
+  backdropStyle?: BackdropStyle;
 }) {
   // useTopLayer에 따라 조건부 렌더링
   if (renderMode === "top-layer") {

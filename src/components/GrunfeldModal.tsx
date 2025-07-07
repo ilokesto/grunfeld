@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import GrunfeldStore from "../store/GrunfeldStore";
-import { GrunfeldElementProps } from "../types";
+import { BackdropStyle, GrunfeldElementProps } from "../types";
 import { getPositionStyles } from "../utils/getPositionStyles";
 
 export function GrunfeldModal({
@@ -8,7 +8,7 @@ export function GrunfeldModal({
   position = "center",
   lightDismiss,
   backdropStyle,
-}: GrunfeldElementProps & { backdropStyle?: React.CSSProperties }) {
+}: GrunfeldElementProps & { backdropStyle?: BackdropStyle }) {
   const dialogRef = useRef<HTMLDivElement>(null);
 
   // ESC 키로 대화상자 닫기
@@ -69,9 +69,8 @@ export function GrunfeldModal({
         bottom: 0,
         right: 0,
         left: 0,
-        background: "rgba(0, 0, 0, 0.3)",
+        background: backdropStyle ?? "rgba(0, 0, 0, 0.3)",
         zIndex: 1000,
-        ...backdropStyle,
       }}
       onClick={handleBackdropClick}
       aria-hidden="true"

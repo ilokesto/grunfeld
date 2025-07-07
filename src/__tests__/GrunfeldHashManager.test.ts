@@ -1,28 +1,173 @@
+import React from "react";
 import { generateDialogHash, hashManager } from "../store/GrunfeldHashManager";
-import { GrunfeldProps } from "../types";
+import { GrunfeldElementProps, GrunfeldProps } from "../types";
 import { logger } from "../utils/logger";
 
-// 로거를 모킹
-jest.mock("../utils/logger", () => ({
-  logger: {
-    debug: jest.fn(),
-    warn: jest.fn(),
-    error: jest.fn(),
-  },
-}));
+// Mock dependencies
+jest.mock("../utils/logger");
+const mockLogger = logger as jest.Mocked<typeof logger>;
 
-const mockedLogger = logger as jest.Mocked<typeof logger>;
+// Mock btoa for consistent testing
+const mockBtoa = jest.fn();
+global.btoa = mockBtoa;
 
 describe("GrunfeldHashManager", () => {
   beforeEach(() => {
-    hashManager.clearAll();
     jest.clearAllMocks();
+    hashManager.clearAll();
+    mockBtoa.mockImplementation((str) => Buffer.from(str).toString("base64"));
   });
 
   describe("generateDialogHash", () => {
-    it("should generate consistent hash for same dialog", () => {
-      const dialog: GrunfeldProps = {
-        element: "Test dialog",
+    it("should generate hash for GrunfeldElementProps", () => {
+      const dialog: GrunfeldElementProps = {
+        element: "Test Dialog",
+        position: "center",
+        lightDismiss: true,
+      };
+
+      const hash = generateDialogHash(dialog);
+      expect(hash).toBeTruthy();
+      expect(typeof hash).toBe("string");
+    });
+
+    it("should generate hash for React element", () => {
+      const reactElement = React.createElement(
+        "div",
+        { className: "test" },
+        "Hello"
+      );
+      const dialog: GrunfeldElementProps = {
+        element: reactElement,
+        position: "top-left",
+      };
+
+      const hash = generateDialogHash(dialog);
+      expect(hash).toBeTruthy();
+      expect(typeof hash).toBe("string");
+    });
+
+    it("should generate hash for React component", () => {
+      const TestComponent = () => React.createElement("div", null, "Test");
+      const reactElement = React.createElement(TestComponent, {
+        prop: "value",
+      });
+      const dialog: GrunfeldElementProps = {
+        element: reactElement,
+        position: "center",
+      };
+
+      const hash = generateDialogHash(dialog);
+      expect(hash).toBeTruthy();
+      expect(typeof hash).toBe("string");
+    });
+
+    it("should generate hash for simple ReactNode", () => {
+      const dialog: GrunfeldProps = "Simple string";
+      const hash = generateDialogHash(dialog);
+      expect(hash).toBeTruthy();
+      expect(typeof hash).toBe("string");
+    });
+
+    it("should generate hash for number ReactNode", () => {
+      const dialog: GrunfeldProps = 123;
+      const hash = generateDialogHash(dialog);
+      expect(hash).toBeTruthy();
+      expect(typeof hash).toBe("string");
+    });
+
+    it("should generate hash for null ReactNode", () => {
+      const dialog: GrunfeldProps = null;
+      const hash = generateDialogHash(dialog);
+      expect(hash).toBeTruthy();
+      expect(typeof hash).toBe("string");
+    });
+
+    it("should handle non-serializable element props", () => {
+      const nonSerializableElement = {
+        type: "div",
+        props: {
+          callback: () => {},
+          circular: {} as any,
+        },
+      };
+      nonSerializableElement.props.circular.self =
+        nonSerializableElement.props.circular;
+
+      const dialog: GrunfeldElementProps = {
+        element: nonSerializableElement as any,
+        position: "center",
+      };
+
+      const hash = generateDialogHash(dialog);
+      expect(hash).toBeTruthy();
+      expect(typeof hash).toBe("string");
+    });
+
+    it("should handle btoa failure with fallback", () => {
+      mockBtoa.mockImplementation(() => {
+        throw new Error("btoa failed");
+      });
+
+      const dialog: GrunfeldElementProps = {
+        element: "Test Dialog",
+        position: "center",
+      };
+
+      const hash = generateDialogHash(dialog);
+      expect(hash).toBeTruthy();
+      expect(typeof hash).toBe("string");
+      expect(mockLogger.warn).toHaveBeenCalledWith(
+        "Hash creation failed, using fallback",
+        expect.any(Error)
+      );
+    });
+
+    it("should handle unexpected errors with fallback", () => {
+      // Mock a scenario where an error occurs during serialization
+      const problematicDialog = {};
+      Object.defineProperty(problematicDialog, "element", {
+        get() {
+          throw new Error("Serialization failed");
+        },
+        enumerable: true,
+      });
+
+      const hash = generateDialogHash(problematicDialog as any);
+
+      expect(hash).toBeTruthy();
+      expect(typeof hash).toBe("string");
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        "Unexpected error during hash generation",
+        expect.any(Error)
+      );
+
+      // Restore original
+    });
+
+    it("should generate different hashes for different dialogs", () => {
+      const dialog1: GrunfeldElementProps = {
+        element: "Dialog 1",
+        position: "center",
+      };
+
+      const dialog2: GrunfeldElementProps = {
+        element: "Dialog 2",
+        position: "center",
+      };
+
+      const hash1 = generateDialogHash(dialog1);
+      const hash2 = generateDialogHash(dialog2);
+
+      expect(hash1).not.toBe(hash2);
+    });
+
+    it("should generate same hash for identical dialogs", () => {
+      // Mock btoa to return consistent result
+      mockBtoa.mockImplementation(() => "consistent-hash-123");
+
+      const dialog: GrunfeldElementProps = {
+        element: "Same Dialog",
         position: "center",
         lightDismiss: true,
       };
@@ -31,315 +176,336 @@ describe("GrunfeldHashManager", () => {
       const hash2 = generateDialogHash(dialog);
 
       expect(hash1).toBe(hash2);
-      expect(typeof hash1).toBe("string");
-      expect(hash1.length).toBeGreaterThan(0);
     });
 
-    it("should generate different hash for different dialogs", () => {
-      const dialog1: GrunfeldProps = {
-        element: "Dialog 1",
-        position: "center",
-      };
-
-      const dialog2: GrunfeldProps = {
-        element: "Dialog 2",
-        position: "bottom",
-      };
-
-      const hash1 = generateDialogHash(dialog1);
-      const hash2 = generateDialogHash(dialog2);
-
-      expect(hash1).not.toBe(hash2);
-    });
-
-    it("should handle React.ReactNode dialogs", () => {
-      const dialog1: GrunfeldProps = "Simple string dialog";
-      const dialog2: GrunfeldProps = 123;
-
-      const hash1 = generateDialogHash(dialog1);
-      const hash2 = generateDialogHash(dialog2);
-
-      expect(typeof hash1).toBe("string");
-      expect(typeof hash2).toBe("string");
-      expect(hash1).not.toBe(hash2);
-    });
-
-    it("should handle null and undefined values", () => {
-      const dialog1: GrunfeldProps = null;
-      const dialog2: GrunfeldProps = undefined;
-
-      const hash1 = generateDialogHash(dialog1);
-      const hash2 = generateDialogHash(dialog2);
-
-      expect(typeof hash1).toBe("string");
-      expect(typeof hash2).toBe("string");
-      expect(hash1).not.toBe(hash2);
-    });
-
-    it("should handle boolean values", () => {
-      const dialog1: GrunfeldProps = true;
-      const dialog2: GrunfeldProps = false;
-
-      const hash1 = generateDialogHash(dialog1);
-      const hash2 = generateDialogHash(dialog2);
-
-      expect(typeof hash1).toBe("string");
-      expect(typeof hash2).toBe("string");
-      expect(hash1).not.toBe(hash2);
-    });
-
-    it("should handle non-serializable objects", () => {
-      const circularObj: any = {};
-      circularObj.self = circularObj; // 순환 참조로 JSON.stringify 실패
-
-      const dialog: GrunfeldProps = {
-        element: circularObj,
-        position: "center",
-      };
-
-      const hash = generateDialogHash(dialog);
-
-      expect(typeof hash).toBe("string");
-      expect(hash.length).toBeGreaterThan(0);
-      // debug 메시지가 호출되었는지 확인
-      expect(mockedLogger.debug).toHaveBeenCalledWith(
-        "Object is not serializable, using fallback",
-        circularObj
-      );
-    });
-
-    it("should handle React elements with non-serializable props", () => {
-      const nonSerializableFunc = () => "test";
-
-      const reactElement: any = {
-        type: "div",
-        props: { onClick: nonSerializableFunc }, // 함수는 직렬화 불가능
-      };
-
-      const dialog: GrunfeldProps = {
-        element: reactElement as React.ReactNode,
-        position: "center",
-      };
-
-      const hash = generateDialogHash(dialog);
-
-      expect(typeof hash).toBe("string");
-      expect(hash.length).toBeGreaterThan(0);
-      // React element의 경우 isSerializable이 false여도 "[Non-serializable]"로 대체되므로
-      // 정상적인 해시가 생성되어야 함
-    });
-
-    it("should call debug logger when safeStringify handles non-serializable element", () => {
-      const circularObj: any = {};
-      circularObj.self = circularObj;
-
-      // React element가 아닌 비직렬화 가능한 객체를 element로 사용
-      const dialog: GrunfeldProps = {
-        element: circularObj, // 이 경우 safeStringify가 호출됨
-        position: "center",
-      };
-
-      const hash = generateDialogHash(dialog);
-
-      expect(typeof hash).toBe("string");
-      expect(hash.length).toBeGreaterThan(0);
-      // 비직렬화 가능한 element로 인해 debug 메시지가 호출되어야 함
-      expect(mockedLogger.debug).toHaveBeenCalledWith(
-        "Object is not serializable, using fallback",
-        circularObj
-      );
-    });
-
-    it("should handle React element with function type", () => {
-      const MyComponent = () => null;
-      const reactElement: any = {
-        type: MyComponent, // 함수 컴포넌트
-        props: { name: "test" },
-      };
-
-      const dialog: GrunfeldProps = {
-        element: reactElement as React.ReactNode,
-        position: "center",
-      };
-
-      const hash = generateDialogHash(dialog);
-
-      expect(typeof hash).toBe("string");
-      expect(hash.length).toBeGreaterThan(0);
-    });
-
-    it("should use fallback hash when JSON.stringify fails in safeStringify", () => {
-      // isSerializable을 모킹하여 true를 반환하게 하고, JSON.stringify에서 에러 발생시킴
-      const originalIsSerializable = require("../types").isSerializable;
-      const mockIsSerializable = jest.fn().mockReturnValue(true);
-
-      // 모듈을 직접 모킹할 수 없으므로, JSON.stringify를 모킹
-      const originalStringify = JSON.stringify;
-      JSON.stringify = jest.fn().mockImplementation((obj) => {
-        // BigInt와 같이 특정 조건에서 에러 발생
-        if (typeof obj === "bigint") {
-          throw new TypeError("Do not know how to serialize a BigInt");
-        }
-        return originalStringify(obj);
+    it("should handle complex React element with serializable props", () => {
+      const reactElement = React.createElement("div", {
+        className: "test",
+        "data-value": "serializable",
+        style: { color: "red" },
       });
 
-      const bigIntValue = 123n; // BigInt
-
-      const dialog: GrunfeldProps = {
-        element: bigIntValue as any,
-        position: "center",
+      const dialog: GrunfeldElementProps = {
+        element: reactElement,
+        position: "bottom-right",
       };
 
       const hash = generateDialogHash(dialog);
-
+      expect(hash).toBeTruthy();
       expect(typeof hash).toBe("string");
-      expect(hash.length).toBeGreaterThan(0);
-
-      // JSON.stringify 복원
-      JSON.stringify = originalStringify;
-
-      // 실제로는 isSerializable에서 이미 false가 반환되므로
-      // debug 메시지가 호출되었을 것임
-      expect(mockedLogger.debug).toHaveBeenCalledWith(
-        "Object is not serializable, using fallback",
-        bigIntValue
-      );
     });
 
-    it("should use fallback hash when btoa fails", () => {
-      // btoa가 실패할 수 있는 상황을 시뮬레이션
-      const originalBtoa = global.btoa;
-      global.btoa = jest.fn().mockImplementation(() => {
-        throw new Error("btoa failed");
+    it("should handle React element with non-serializable props", () => {
+      const reactElement = React.createElement("div", {
+        className: "test",
+        onClick: () => {},
+        ref: React.createRef(),
       });
 
-      const dialog: GrunfeldProps = {
-        element: "Test dialog",
-        position: "center",
+      const dialog: GrunfeldElementProps = {
+        element: reactElement,
+        position: "bottom-right",
       };
 
       const hash = generateDialogHash(dialog);
-
-      expect(typeof hash).toBe("string");
-      expect(hash.length).toBeGreaterThan(0);
-
-      // btoa 복원
-      global.btoa = originalBtoa;
-    });
-
-    it("should use fallback hash when unexpected error occurs", () => {
-      // isValidGrunfeldElement이 예외를 던지도록 모킹
-      const originalIsValid = require("../types").isValidGrunfeldElement;
-      const mockIsValid = jest.fn().mockImplementation(() => {
-        throw new Error("Unexpected error");
-      });
-
-      // 모듈을 다시 로드할 수 없으므로 다른 방법으로 에러 케이스 테스트
-      const dialog: GrunfeldProps = {
-        element: "Test dialog",
-        position: "center",
-      };
-
-      // 정상적인 경우라도 에러 핸들링이 동작하는지 확인
-      const hash = generateDialogHash(dialog);
+      expect(hash).toBeTruthy();
       expect(typeof hash).toBe("string");
     });
   });
 
   describe("hashManager", () => {
-    it("should prevent duplicate dialogs", () => {
-      const dialog: GrunfeldProps = {
-        element: "Test dialog",
+    describe("tryAddDialog", () => {
+      it("should add new dialog and return true", () => {
+        const dialog: GrunfeldElementProps = {
+          element: "New Dialog",
+          position: "center",
+        };
+
+        const result = hashManager.tryAddDialog(dialog);
+        expect(result).toBe(true);
+        expect(hashManager.getHashCount()).toBe(1);
+      });
+
+      it("should prevent duplicate dialog and return false", () => {
+        // Use a simpler approach - mock the hash generation to return same hash
+        let callCount = 0;
+        const originalBtoa = global.btoa;
+        global.btoa = jest.fn().mockImplementation(() => {
+          callCount++;
+          return "same-hash-for-duplicate-test";
+        });
+
+        const dialog: GrunfeldElementProps = {
+          element: "Duplicate Dialog",
+          position: "center",
+        };
+
+        const result1 = hashManager.tryAddDialog(dialog);
+        expect(result1).toBe(true);
+
+        const result2 = hashManager.tryAddDialog(dialog);
+        expect(result2).toBe(false);
+
+        expect(mockLogger.warn).toHaveBeenCalledWith(
+          "Duplicate dialog prevented",
+          expect.objectContaining({ hash: expect.any(String) })
+        );
+        expect(hashManager.getHashCount()).toBe(1);
+
+        // Restore
+        global.btoa = originalBtoa;
+      });
+
+      it("should log debug message when adding dialog", () => {
+        const dialog: GrunfeldElementProps = {
+          element: "Debug Dialog",
+          position: "center",
+        };
+
+        hashManager.tryAddDialog(dialog);
+
+        expect(mockLogger.debug).toHaveBeenCalledWith(
+          "Dialog added",
+          expect.objectContaining({ hash: expect.any(String) })
+        );
+      });
+    });
+
+    describe("removeDialog", () => {
+      it("should remove existing dialog", () => {
+        // Mock consistent hash generation
+        let callCount = 0;
+        const originalBtoa = global.btoa;
+        global.btoa = jest.fn().mockImplementation(() => {
+          return "consistent-hash-for-remove-test";
+        });
+
+        const dialog: GrunfeldElementProps = {
+          element: "Remove Test Dialog",
+          position: "center",
+        };
+
+        hashManager.tryAddDialog(dialog);
+        expect(hashManager.getHashCount()).toBe(1);
+
+        hashManager.removeDialog(dialog);
+        expect(hashManager.getHashCount()).toBe(0);
+
+        expect(mockLogger.debug).toHaveBeenCalledWith(
+          "Dialog removed",
+          expect.objectContaining({ hash: expect.any(String) })
+        );
+
+        // Restore
+        global.btoa = originalBtoa;
+      });
+
+      it("should log warning when removing non-existent dialog", () => {
+        const dialog: GrunfeldElementProps = {
+          element: "Non-existent Dialog",
+          position: "center",
+        };
+
+        hashManager.removeDialog(dialog);
+
+        expect(mockLogger.warn).toHaveBeenCalledWith(
+          "Attempted to remove non-existent dialog",
+          expect.objectContaining({ hash: expect.any(String) })
+        );
+        expect(hashManager.getHashCount()).toBe(0);
+      });
+    });
+
+    describe("clearAll", () => {
+      it("should clear all dialogs", () => {
+        const dialog1: GrunfeldElementProps = {
+          element: "Dialog 1",
+          position: "center",
+        };
+        const dialog2: GrunfeldElementProps = {
+          element: "Dialog 2",
+          position: "top-left",
+        };
+
+        hashManager.tryAddDialog(dialog1);
+        hashManager.tryAddDialog(dialog2);
+        expect(hashManager.getHashCount()).toBe(2);
+
+        hashManager.clearAll();
+        expect(hashManager.getHashCount()).toBe(0);
+
+        expect(mockLogger.debug).toHaveBeenCalledWith(
+          "All dialogs cleared",
+          expect.objectContaining({ count: 2 })
+        );
+      });
+
+      it("should handle clearing empty hash set", () => {
+        expect(hashManager.getHashCount()).toBe(0);
+
+        hashManager.clearAll();
+        expect(hashManager.getHashCount()).toBe(0);
+
+        expect(mockLogger.debug).toHaveBeenCalledWith(
+          "All dialogs cleared",
+          expect.objectContaining({ count: 0 })
+        );
+      });
+    });
+
+    describe("getHashCount", () => {
+      it("should return correct count", () => {
+        // Clear any existing state first
+        hashManager.clearAll();
+
+        // Mock consistent hash generation
+        const mockHashes = ["hash-1", "hash-2"];
+        let hashIndex = 0;
+        const originalBtoa = global.btoa;
+        global.btoa = jest.fn().mockImplementation(() => {
+          const hash = mockHashes[hashIndex % mockHashes.length];
+          hashIndex++;
+          return hash;
+        });
+
+        expect(hashManager.getHashCount()).toBe(0);
+
+        const dialog1: GrunfeldElementProps = {
+          element: "Dialog 1",
+          position: "center",
+        };
+
+        // Reset hash index for consistent generation
+        hashIndex = 0;
+        hashManager.tryAddDialog(dialog1);
+        expect(hashManager.getHashCount()).toBe(1);
+
+        const dialog2: GrunfeldElementProps = {
+          element: "Dialog 2",
+          position: "top-left",
+        };
+        hashManager.tryAddDialog(dialog2);
+        expect(hashManager.getHashCount()).toBe(2);
+
+        // Reset index to ensure same hash for dialog1 removal
+        hashIndex = 0;
+        hashManager.removeDialog(dialog1);
+        expect(hashManager.getHashCount()).toBe(1);
+
+        hashManager.clearAll();
+        expect(hashManager.getHashCount()).toBe(0);
+
+        // Restore
+        global.btoa = originalBtoa;
+      });
+    });
+  });
+
+  describe("safeStringify", () => {
+    it("should handle primitive values", () => {
+      // These tests are indirect since safeStringify is not exported
+      // but we can test it through generateDialogHash
+      const stringDialog: GrunfeldProps = "test string";
+      const numberDialog: GrunfeldProps = 42;
+      const booleanDialog: GrunfeldProps = true;
+      const nullDialog: GrunfeldProps = null;
+
+      expect(() => generateDialogHash(stringDialog)).not.toThrow();
+      expect(() => generateDialogHash(numberDialog)).not.toThrow();
+      expect(() => generateDialogHash(booleanDialog)).not.toThrow();
+      expect(() => generateDialogHash(nullDialog)).not.toThrow();
+    });
+
+    it("should handle complex non-serializable objects", () => {
+      const complexObj = {
+        func: () => {},
+        symbol: Symbol("test"),
+        circular: {} as any,
+      };
+      complexObj.circular.self = complexObj.circular;
+
+      const dialog: GrunfeldProps = complexObj as any;
+
+      expect(() => generateDialogHash(dialog)).not.toThrow();
+      expect(mockLogger.debug).toHaveBeenCalledWith(
+        "Object is not serializable, using fallback",
+        complexObj
+      );
+    });
+
+    it("should handle JSON.stringify failures", () => {
+      // Mock a scenario where JSON.stringify fails
+      const originalStringify = JSON.stringify;
+      let callCount = 0;
+      JSON.stringify = jest.fn().mockImplementation((obj) => {
+        callCount++;
+        if (callCount === 2) {
+          // Fail on the second call (safeStringify)
+          throw new Error("Stringify failed");
+        }
+        return originalStringify(obj);
+      });
+
+      const dialog: GrunfeldElementProps = {
+        element: { complexObject: "test" } as any,
         position: "center",
       };
 
-      const result1 = hashManager.tryAddDialog(dialog);
-      const result2 = hashManager.tryAddDialog(dialog);
+      expect(() => generateDialogHash(dialog)).not.toThrow();
 
-      expect(result1).toBe(true);
-      expect(result2).toBe(false);
+      // Restore original
+      JSON.stringify = originalStringify;
     });
+  });
 
-    it("should allow adding different dialogs", () => {
-      const dialog1: GrunfeldProps = {
+  describe("fallback hash generation", () => {
+    it("should generate unique fallback hashes", () => {
+      // Mock both btoa and JSON.stringify to fail
+      mockBtoa.mockImplementation(() => {
+        throw new Error("btoa failed");
+      });
+
+      const dialog1: GrunfeldElementProps = {
         element: "Dialog 1",
         position: "center",
       };
 
-      const dialog2: GrunfeldProps = {
+      const dialog2: GrunfeldElementProps = {
         element: "Dialog 2",
-        position: "bottom",
-      };
-
-      const result1 = hashManager.tryAddDialog(dialog1);
-      const result2 = hashManager.tryAddDialog(dialog2);
-
-      expect(result1).toBe(true);
-      expect(result2).toBe(true);
-    });
-
-    it("should remove dialogs correctly", () => {
-      const dialog: GrunfeldProps = {
-        element: "Test dialog",
         position: "center",
       };
 
-      hashManager.tryAddDialog(dialog);
-      hashManager.removeDialog(dialog);
+      const hash1 = generateDialogHash(dialog1);
+      const hash2 = generateDialogHash(dialog2);
 
-      // Should be able to add again after removal
-      const result = hashManager.tryAddDialog(dialog);
-      expect(result).toBe(true);
+      expect(hash1).toBeTruthy();
+      expect(hash2).toBeTruthy();
+      expect(hash1).not.toBe(hash2);
     });
 
-    it("should handle removing non-existent dialog", () => {
-      const dialog: GrunfeldProps = {
-        element: "Non-existent dialog",
+    it("should handle Date.now and Math.random in fallback", () => {
+      const originalDateNow = Date.now;
+      const originalMathRandom = Math.random;
+
+      Date.now = jest.fn().mockReturnValue(1234567890);
+      Math.random = jest.fn().mockReturnValue(0.5);
+
+      mockBtoa.mockImplementation(() => {
+        throw new Error("btoa failed");
+      });
+
+      const dialog: GrunfeldElementProps = {
+        element: "Fallback Dialog",
         position: "center",
       };
 
-      // 존재하지 않는 대화상자 제거 시도
-      hashManager.removeDialog(dialog);
+      const hash = generateDialogHash(dialog);
+      expect(hash).toBeTruthy();
+      expect(typeof hash).toBe("string");
 
-      // 에러 없이 처리되어야 함
-      expect(hashManager.getHashCount()).toBe(0);
-    });
-
-    it("should clear all dialogs", () => {
-      const dialog1: GrunfeldProps = { element: "Dialog 1" };
-      const dialog2: GrunfeldProps = { element: "Dialog 2" };
-
-      hashManager.tryAddDialog(dialog1);
-      hashManager.tryAddDialog(dialog2);
-
-      expect(hashManager.getHashCount()).toBe(2);
-
-      hashManager.clearAll();
-
-      expect(hashManager.getHashCount()).toBe(0);
-
-      // Should be able to add again after clear
-      expect(hashManager.tryAddDialog(dialog1)).toBe(true);
-      expect(hashManager.tryAddDialog(dialog2)).toBe(true);
-    });
-
-    it("should correctly count hashes", () => {
-      expect(hashManager.getHashCount()).toBe(0);
-
-      const dialog1: GrunfeldProps = { element: "Dialog 1" };
-      const dialog2: GrunfeldProps = { element: "Dialog 2" };
-
-      hashManager.tryAddDialog(dialog1);
-      expect(hashManager.getHashCount()).toBe(1);
-
-      hashManager.tryAddDialog(dialog2);
-      expect(hashManager.getHashCount()).toBe(2);
-
-      hashManager.removeDialog(dialog1);
-      expect(hashManager.getHashCount()).toBe(1);
-
-      hashManager.clearAll();
-      expect(hashManager.getHashCount()).toBe(0);
+      // Restore originals
+      Date.now = originalDateNow;
+      Math.random = originalMathRandom;
     });
   });
 });

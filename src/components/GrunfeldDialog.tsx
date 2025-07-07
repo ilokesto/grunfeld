@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import GrunfeldStore from "../store/GrunfeldStore";
-import { GrunfeldElementProps } from "../types";
+import { BackdropStyle, GrunfeldElementProps } from "../types";
 import { getPositionStyles } from "../utils/getPositionStyles";
 
 export function GrunfeldDialog({
@@ -8,7 +8,7 @@ export function GrunfeldDialog({
   position = "center",
   lightDismiss,
   backdropStyle,
-}: GrunfeldElementProps & { backdropStyle?: React.CSSProperties }) {
+}: GrunfeldElementProps & { backdropStyle?: BackdropStyle }) {
   const dialogRef = useRef<HTMLDialogElement>(null);
 
   // Dialog를 top-layer에 표시하고 이벤트 관리
@@ -47,17 +47,11 @@ export function GrunfeldDialog({
       .substr(2, 9)}`;
     dialog.classList.add(className);
 
-    // CSS 규칙 생성
-    const cssRules = Object.entries(backdropStyle)
-      .map(([key, value]) => {
-        const cssProperty = key.replace(/([A-Z])/g, "-$1").toLowerCase();
-        return `${cssProperty}: ${value};`;
-      })
-      .join(" ");
-
     // 스타일 요소 생성 및 삽입
     const styleElement = document.createElement("style");
-    styleElement.textContent = `.${className}::backdrop { ${cssRules} }`;
+    styleElement.textContent = `.${className}::backdrop { background: ${
+      backdropStyle ?? "rgba(0, 0, 0, 0.3)"
+    } }`;
     document.head.appendChild(styleElement);
 
     return () => {
