@@ -77,13 +77,44 @@ const showConfirm = async () => {
 타입 매개변수를 생략하면 응답을 기다리지 않는 간단한 알림으로 사용됩니다:
 
 ```tsx
-grunfeld.add((removeWith) => ({
+// 기본 알림
+grunfeld.add(() => ({
   element: (
-    <div>
+    <div
+      style={{
+        padding: "20px",
+        background: "white",
+        borderRadius: "8px",
+        textAlign: "center",
+      }}
+    >
       <p>저장이 완료되었습니다!</p>
-      <button onClick={() => removeWith()}>확인</button>
+      <button onClick={() => grunfeld.remove()}>확인</button>
     </div>
   ),
+}));
+
+// 자동으로 사라지는 토스트 알림
+grunfeld.add(() => ({
+  element: (
+    <div
+      style={{
+        padding: "16px",
+        background: "#4CAF50",
+        color: "white",
+        borderRadius: "8px",
+        boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
+      }}
+    >
+      ✅ 성공적으로 저장되었습니다
+    </div>
+  ),
+  position: "top-right",
+  lightDismiss: false,
+  dismissCallback: () => {
+    // 3초 후 자동 제거
+    setTimeout(() => grunfeld.remove(), 3000);
+  },
 }));
 ```
 
@@ -94,13 +125,38 @@ grunfeld.add((removeWith) => ({
 ```tsx
 const confirmed = await grunfeld.add<boolean>((removeWith) => ({
   element: (
-    <div>
-      <p>계속하시겠습니까?</p>
-      <button onClick={() => removeWith(true)}>예</button>
-      <button onClick={() => removeWith(false)}>아니오</button>
+    <div
+      style={{
+        padding: "20px",
+        background: "white",
+        borderRadius: "8px",
+        textAlign: "center",
+      }}
+    >
+      <p>정말 삭제하시겠습니까?</p>
+      <div>
+        <button
+          onClick={() => removeWith(true)}
+          style={{
+            marginRight: "10px",
+            backgroundColor: "#ff4444",
+            color: "white",
+          }}
+        >
+          삭제
+        </button>
+        <button onClick={() => removeWith(false)}>취소</button>
+      </div>
     </div>
   ),
 }));
+
+if (confirmed) {
+  console.log("사용자가 삭제를 확인했습니다");
+  // 삭제 로직 실행
+} else {
+  console.log("사용자가 취소했습니다");
+}
 ```
 
 ### 입력 대화상자
@@ -108,14 +164,89 @@ const confirmed = await grunfeld.add<boolean>((removeWith) => ({
 사용자로부터 데이터를 입력받는 대화상자:
 
 ```tsx
-const userInput = await grunfeld.add<string>((removeWith) => ({
+// 간단한 인라인 방식
+const userName = await grunfeld.add<string>((removeWith) => ({
   element: (
-    <div>
-      <p>이름을 입력하세요:</p>
-      <input onChange={(e) => removeWith(e.target.value)} placeholder="이름" />
+    <div style={{ padding: "20px", background: "white", borderRadius: "8px" }}>
+      <h2>이름을 입력하세요</h2>
+      <input
+        autoFocus
+        placeholder="이름을 입력하세요"
+        onKeyDown={(e) => {
+          if (e.key === "Enter" && e.currentTarget.value.trim()) {
+            removeWith(e.currentTarget.value.trim());
+          }
+        }}
+      />
+      <div style={{ marginTop: "10px" }}>
+        <button
+          onClick={(e) => {
+            const input =
+              e.currentTarget.parentElement?.parentElement?.querySelector(
+                "input"
+              );
+            if (input?.value.trim()) removeWith(input.value.trim());
+          }}
+        >
+          확인
+        </button>
+        <button onClick={() => removeWith("")} style={{ marginLeft: "10px" }}>
+          취소
+        </button>
+      </div>
     </div>
   ),
 }));
+
+// 컴포넌트를 사용한 방식 (권장)
+const InputModal = ({ onClose }: { onClose: (name: string) => void }) => {
+  const [name, setName] = useState("");
+
+  return (
+    <div
+      style={{
+        padding: "20px",
+        background: "white",
+        borderRadius: "8px",
+        minWidth: "300px",
+      }}
+    >
+      <h2>이름을 입력하세요</h2>
+      <input
+        autoFocus
+        type="text"
+        placeholder="이름"
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        onKeyDown={(e) =>
+          e.key === "Enter" && name.trim() && onClose(name.trim())
+        }
+        style={{ width: "100%", padding: "8px", marginBottom: "10px" }}
+      />
+      <div>
+        <button
+          onClick={() => name.trim() && onClose(name.trim())}
+          disabled={!name.trim()}
+          style={{ marginRight: "10px" }}
+        >
+          확인
+        </button>
+        <button onClick={() => onClose("")}>취소</button>
+      </div>
+    </div>
+  );
+};
+
+// 사용법
+const result = await grunfeld.add<string>((removeWith) => ({
+  element: <InputModal onClose={removeWith} />,
+}));
+
+if (result) {
+  console.log("입력된 이름:", result);
+} else {
+  console.log("취소됨");
+}
 ```
 
 ### 비동기 처리
@@ -124,13 +255,59 @@ const userInput = await grunfeld.add<string>((removeWith) => ({
 
 ```tsx
 const result = await grunfeld.add<string>(async (removeWith) => {
-  const data = await fetch("/api/user").then((res) => res.json());
+  // 로딩 표시
+  const loadingElement = (
+    <div style={{ padding: "20px", textAlign: "center" }}>
+      <p>사용자 정보를 불러오는 중...</p>
+      <div>⏳</div>
+    </div>
+  );
+
+  // 먼저 로딩 다이얼로그 표시
+  setTimeout(() => {
+    // 실제 데이터 로드 후 내용 업데이트
+    fetch("/api/user")
+      .then((res) => res.json())
+      .then((data) => {
+        // 성공적으로 로드된 후의 UI로 업데이트하려면
+        // 새로운 다이얼로그를 생성하거나 상태 관리를 사용해야 합니다
+      })
+      .catch(() => {
+        removeWith("로드 실패");
+      });
+  }, 100);
+
+  return {
+    element: loadingElement,
+  };
+});
+
+// 더 실용적인 예제: 선택 리스트
+const selectedItem = await grunfeld.add<string>(async (removeWith) => {
+  const items = await fetch("/api/items").then((res) => res.json());
 
   return {
     element: (
-      <div>
-        <p>사용자: {data.name}</p>
-        <input onChange={(e) => removeWith(e.target.value)} />
+      <div style={{ padding: "20px", minWidth: "250px" }}>
+        <h3>항목을 선택하세요</h3>
+        <ul style={{ listStyle: "none", padding: 0 }}>
+          {items.map((item: any) => (
+            <li key={item.id}>
+              <button
+                onClick={() => removeWith(item.name)}
+                style={{
+                  width: "100%",
+                  padding: "8px",
+                  marginBottom: "4px",
+                  textAlign: "left",
+                }}
+              >
+                {item.name}
+              </button>
+            </li>
+          ))}
+        </ul>
+        <button onClick={() => removeWith("")}>취소</button>
       </div>
     ),
   };
@@ -164,11 +341,50 @@ grunfeld.add(() => ({
   renderMode: "top-layer", // top-layer 렌더링
   backdropStyle: {
     // 커스텀 백드롭
+    backgroundColor: "rgba(0, 0, 0, 0.7)",
     backdropFilter: "blur(5px)",
   },
   dismissCallback: () => {
     // 닫힐 때 실행할 함수
     console.log("대화상자가 닫혔습니다");
+  },
+}));
+
+// 스타일링 예제
+grunfeld.add(() => ({
+  element: (
+    <div
+      style={{
+        background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+        color: "white",
+        padding: "30px",
+        borderRadius: "16px",
+        boxShadow: "0 20px 40px rgba(0,0,0,0.3)",
+        textAlign: "center",
+        minWidth: "300px",
+      }}
+    >
+      <h2>🎉 축하합니다!</h2>
+      <p>작업이 성공적으로 완료되었습니다.</p>
+      <button
+        onClick={() => grunfeld.remove()}
+        style={{
+          background: "white",
+          color: "#667eea",
+          border: "none",
+          padding: "10px 20px",
+          borderRadius: "25px",
+          cursor: "pointer",
+        }}
+      >
+        확인
+      </button>
+    </div>
+  ),
+  position: "center",
+  backdropStyle: {
+    backgroundColor: "rgba(102, 126, 234, 0.1)",
+    backdropFilter: "blur(8px)",
   },
 }));
 ```
@@ -229,9 +445,103 @@ grunfeld.remove();
 
 // 모든 대화상자 제거
 grunfeld.clear();
+
+// ESC 키로 닫기 (top-layer 모드에서 자동 지원)
+// 또는 lightDismiss: true일 때 배경 클릭으로 닫기
 ```
 
 대화상자는 LIFO(Last In First Out) 순서로 제거됩니다. 이는 대화상자들 간의 맥락적 관계를 유지하기 위함입니다.
+
+## 🎯 실제 사용 예제
+
+### 완전한 컴포넌트 예제
+
+```tsx
+import React, { useState } from "react";
+import { grunfeld, GrunfeldProvider } from "grunfeld";
+
+function MyApp() {
+  const [message, setMessage] = useState("");
+
+  const showNotification = () => {
+    grunfeld.add(() => ({
+      element: (
+        <div
+          style={{
+            padding: "16px",
+            background: "#4CAF50",
+            color: "white",
+            borderRadius: "8px",
+          }}
+        >
+          알림이 표시되었습니다!
+        </div>
+      ),
+      position: "top-right",
+      dismissCallback: () => {
+        setTimeout(() => grunfeld.remove(), 2000);
+      },
+    }));
+  };
+
+  const showConfirm = async () => {
+    const result = await grunfeld.add<boolean>((removeWith) => ({
+      element: (
+        <div
+          style={{ padding: "20px", background: "white", borderRadius: "8px" }}
+        >
+          <h3>확인</h3>
+          <p>정말 진행하시겠습니까?</p>
+          <button onClick={() => removeWith(true)}>예</button>
+          <button onClick={() => removeWith(false)}>아니오</button>
+        </div>
+      ),
+    }));
+
+    setMessage(result ? "확인됨" : "취소됨");
+  };
+
+  const showInput = async () => {
+    const input = await grunfeld.add<string>((removeWith) => ({
+      element: <InputDialog onSubmit={removeWith} />,
+    }));
+
+    setMessage(input ? `입력값: ${input}` : "취소됨");
+  };
+
+  return (
+    <GrunfeldProvider>
+      <div style={{ padding: "20px" }}>
+        <h1>Grunfeld 예제</h1>
+        <button onClick={showNotification}>알림 표시</button>
+        <button onClick={showConfirm}>확인 대화상자</button>
+        <button onClick={showInput}>입력 대화상자</button>
+        <p>상태: {message}</p>
+      </div>
+    </GrunfeldProvider>
+  );
+}
+
+const InputDialog = ({ onSubmit }: { onSubmit: (value: string) => void }) => {
+  const [value, setValue] = useState("");
+
+  return (
+    <div style={{ padding: "20px", background: "white", borderRadius: "8px" }}>
+      <h3>입력</h3>
+      <input
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        placeholder="값을 입력하세요"
+        autoFocus
+      />
+      <div style={{ marginTop: "10px" }}>
+        <button onClick={() => onSubmit(value)}>확인</button>
+        <button onClick={() => onSubmit("")}>취소</button>
+      </div>
+    </div>
+  );
+};
+```
 
 ## 📋 API 참조
 
@@ -244,8 +554,7 @@ grunfeld.clear();
 
 **반환값:**
 
-- `T`가 `void`인 경우: `void`
-- 그 외의 경우: `Promise<T>`
+- 항상 `Promise<T>` 반환 (내부적으로 TypeScript 조건부 타입 처리)
 
 **GrunfeldProps:**
 
@@ -285,10 +594,9 @@ type Position =
 
 ## 🌐 브라우저 호환성
 
-**Inline 렌더링:** 모든 모던 브라우저 + IE 11+  
+**Inline 렌더링:** 모든 모던 브라우저 + IE 11+
 **Top-layer 렌더링:** Chrome 37+, Firefox 98+, Safari 15.4+, Edge 79+
 
----
+```
 
-**Promise를 resolve하지 않으면 어떻게 될까요?**
-사용자가 `removeWith`를 호출하지 않으면 Promise는 영원히 pending 상태가 되어 메모리 누수가 발생할 수 있습니다. 항상 적절한 종료 조건을 제공하거나 `grunfeld.remove()`/`grunfeld.clear()`로 수동 정리하세요.
+```

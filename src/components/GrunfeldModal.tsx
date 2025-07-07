@@ -84,11 +84,7 @@ export function GrunfeldModal({
   };
 
   return (
-    <div
-      style={getBackdropStyles()}
-      onClick={handleBackdropClick}
-      aria-hidden="true"
-    >
+    <div style={getBackdropStyles()} onClick={handleBackdropClick}>
       <div
         ref={dialogRef}
         style={{
