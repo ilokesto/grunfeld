@@ -1,28 +1,23 @@
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
+import { Grunfeld } from "./Grunfeld";
 import { GrunfeldStore } from "./GrunfeldStore";
 import { GrunfeldProviderProps, isValidGrunfeldElement } from "./types";
-import { Grunfeld } from "./Grunfeld";
 
 export function GrunfeldProvider({
   children,
-  options = { defaultPosition: "center", defaultDismiss: true },
+  options = { defaultPosition: "center", defaultLightDismiss: true },
 }: GrunfeldProviderProps) {
-  const [, grunfeldRerenderingTrigger] = useState(false);
-
-  useEffect(() => {
-    const handleStoreChange = () => {
-      grunfeldRerenderingTrigger((prev) => !prev);
-    };
-
-    GrunfeldStore.addListener(handleStoreChange);
-    return () => GrunfeldStore.removeListener(handleStoreChange);
-  }, []);
+  const store = useSyncExternalStore(
+    GrunfeldStore.subscribe,
+    GrunfeldStore.getStore,
+    GrunfeldStore.getStore
+  );
 
   return (
     <>
       {children}
 
-      {!GrunfeldStore.isStoreEmpty() && (
+      {store.length > 0 && (
         <div
           style={{
             position: "fixed",
@@ -33,7 +28,7 @@ export function GrunfeldProvider({
             background: "transparent",
           }}
         >
-          {GrunfeldStore.store.map((props, index) => {
+          {store.map((props, index) => {
             const { element, position, lightDismiss } = isValidGrunfeldElement(
               props
             )
@@ -45,7 +40,7 @@ export function GrunfeldProvider({
                 key={index}
                 position={position ?? options.defaultPosition}
                 element={element}
-                lightDismiss={lightDismiss ?? options.defaultDismiss}
+                lightDismiss={lightDismiss ?? options.defaultLightDismiss}
                 backdropStyle={options.backdropStyle}
               />
             );

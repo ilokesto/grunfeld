@@ -33,7 +33,7 @@ function App() {
     <GrunfeldProvider
       options={{
         defaultPosition: "center",
-        defaultDismiss: true,
+        defaultLightDismiss: true,
         backdropStyle: {
           /* custom backdrop style */
         },
@@ -139,11 +139,11 @@ grunfeld.clear();
 
 #### GrunfeldProviderOptions
 
-| Prop            | Type                 | Default  | Description                   |
-| --------------- | -------------------- | -------- | ----------------------------- |
-| defaultPosition | 'center' \| 'bottom' | 'center' | Default dialog position       |
-| defaultDismiss  | boolean              | true     | Default light dismiss setting |
-| backdropStyle   | CSSProperties        | -        | Custom backdrop style         |
+| Prop                | Type                 | Default  | Description                   |
+| ------------------- | -------------------- | -------- | ----------------------------- |
+| defaultPosition     | 'center' \| 'bottom' | 'center' | Default dialog position       |
+| defaultLightDismiss | boolean              | true     | Default light dismiss setting |
+| backdropStyle       | CSSProperties        | -        | Custom backdrop style         |
 
 ### grunfeld object
 

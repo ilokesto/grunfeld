@@ -40,7 +40,7 @@ function App() {
     <GrunfeldProvider
       options={{
         defaultPosition: "center",
-        defaultDismiss: true,
+        defaultLightDismiss: true,
         backdropStyle: {
           /* 커스텀 백드롭 스타일 */
         },
@@ -147,11 +147,11 @@ grunfeld.clear();
 
 #### GrunfeldProviderOptions
 
-| 속성            | 타입                 | 기본값   | 설명                    |
-| --------------- | -------------------- | -------- | ----------------------- |
-| defaultPosition | 'center' \| 'bottom' | 'center' | 대화상자의 기본 위치    |
-| defaultDismiss  | boolean              | true     | 기본 light dismiss 설정 |
-| backdropStyle   | CSSProperties        | -        | 백드롭 커스텀 스타일    |
+| 속성                | 타입                 | 기본값   | 설명                    |
+| ------------------- | -------------------- | -------- | ----------------------- |
+| defaultPosition     | 'center' \| 'bottom' | 'center' | 대화상자의 기본 위치    |
+| defaultLightDismiss | boolean              | true     | 기본 light dismiss 설정 |
+| backdropStyle       | CSSProperties        | -        | 백드롭 커스텀 스타일    |
 
 ### grunfeld 객체
 

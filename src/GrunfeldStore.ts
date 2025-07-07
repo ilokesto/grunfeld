@@ -1,61 +1,81 @@
+import { hashManager } from "./GrunfeldHashManager";
 import { GrunfeldProps, isValidGrunfeldElement } from "./types";
 
 type Store = Array<GrunfeldProps>;
+type Callback = () => void;
+type RemoveWithFunction<T> = (data: T) => T;
+type DialogFactory<T> = (removeWith: RemoveWithFunction<T>) => GrunfeldProps;
 
 function createGrunfeldStore() {
-  let callbacks = new Set<() => void>();
+  const callbacks = new Set<Callback>();
   let store: Store = [];
 
+  const notifyCallbacks = () => {
+    store = [...store];
+    callbacks.forEach((callback) => callback());
+  };
+
   return {
-    store,
     add(dialog: GrunfeldProps) {
+      if (!hashManager.tryAddDialog(dialog)) {
+        return;
+      }
+
       store.push(dialog);
-      callbacks.forEach((ls) => ls());
+      notifyCallbacks();
     },
-    addAsync<T>(
-      dialog: (removeWith: (data: T) => T) => GrunfeldProps
-    ): Promise<T> {
+
+    addAsync<T>(dialogFactory: DialogFactory<T>): Promise<T> {
       return new Promise<T>((resolve) => {
         let dialogProps: GrunfeldProps;
-        const removeWith = (data: T) => {
-          const idx = store.indexOf(dialogProps);
-          if (idx !== -1) {
-            store.splice(idx, 1);
-            callbacks.forEach((ls) => ls());
+
+        const removeWith: RemoveWithFunction<T> = (data: T) => {
+          const index = store.indexOf(dialogProps);
+          if (index !== -1) {
+            hashManager.removeDialog(dialogProps);
+            store.splice(index, 1);
+            notifyCallbacks();
           }
           resolve(data);
           return data;
         };
-        dialogProps = dialog(removeWith);
+
+        dialogProps = dialogFactory(removeWith);
+
+        if (!hashManager.tryAddDialog(dialogProps)) {
+          console.warn("Duplicate async dialog prevented");
+          resolve({} as T);
+          return;
+        }
+
         store.push(dialogProps);
-        callbacks.forEach((ls) => ls());
+        notifyCallbacks();
       });
     },
+
     remove() {
       const props = store.pop();
-
-      if (props && isValidGrunfeldElement(props) && props.dismissCallback) {
-        props.dismissCallback();
+      if (props) {
+        hashManager.removeDialog(props);
+        dismissDialog(props);
+        notifyCallbacks();
       }
+    },
 
-      callbacks.forEach((ls) => ls());
-    },
     clear() {
-      store.forEach((props) => {
-        if (props && isValidGrunfeldElement(props) && props.dismissCallback)
-          props.dismissCallback();
-      });
+      store.forEach(dismissDialog);
       store = [];
-      callbacks.forEach((ls) => ls());
+      hashManager.clearAll();
+      notifyCallbacks();
     },
-    addListener(listener: () => void) {
-      callbacks.add(listener);
-    },
-    removeListener(listener: () => void) {
-      callbacks.delete(listener);
-    },
-    isStoreEmpty() {
-      return store.length === 0;
+
+    getStore: () => store,
+
+    subscribe(callback: Callback) {
+      callbacks.add(callback);
+      return () => {
+        callbacks.delete(callback);
+      };
     },
   };
 }
@@ -67,5 +87,10 @@ export default {
   addAsync: GrunfeldStore.addAsync,
   remove: GrunfeldStore.remove,
   clear: GrunfeldStore.clear,
-  store: GrunfeldStore.store,
 };
+
+function dismissDialog(props: GrunfeldProps) {
+  if (isValidGrunfeldElement(props) && props.dismissCallback) {
+    props.dismissCallback();
+  }
+}

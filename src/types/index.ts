@@ -22,7 +22,7 @@ export type GrunfeldProviderProps = {
   children: React.ReactNode;
   options?: {
     defaultPosition?: Position;
-    defaultDismiss?: boolean;
+    defaultLightDismiss?: boolean;
     backdropStyle?: React.CSSProperties;
   };
 };
