@@ -1,5 +1,8 @@
 # Grunfeld
 
+Grunfeld는 React 애플리케이션을 위한 **간단하고 가벼운 대화상자(dialog) 관리 라이브러리**입니다.
+복잡한 상태 관리 없이 몇 줄의 코드로 모달, 알림, 확인 대화상자를 쉽게 구현할 수 있습니다.
+
 ## 특징
 
 - 🚀 **간단한 API**: 복잡한 상태 관리 없이 몇 줄의 코드로 대화상자를 관리할 수 있습니다
@@ -7,7 +10,9 @@
 - 📱 **유연한 위치 설정**: 중앙 모달, 하단 시트 등 다양한 UI 패턴에 맞춰 위치를 조정할 수 있습니다
 - 🔄 **스마트한 스택 관리**: 여러 대화상자가 열릴 때 논리적인 LIFO(Last In First Out) 순서로 관리됩니다
 - 🎨 **커스텀 스타일링**: 백드롭 스타일부터 개별 대화상자 스타일까지 자유롭게 커스터마이징 가능합니다
-- 👆 **직관적인 UX**: 배경 클릭으로 닫기, 자동 포커스 관리 등 사용자 경험을 고려한 기능들을 제공합니다는 React 애플리케이션을 위한 간단하고 가벼운 대화상자(dialog) 관리 라이브러리입니다.
+- 👆 **직관적인 UX**: 배경 클릭으로 닫기, 자동 포커스 관리 등 사용자 경험을 고려한 기능들을 제공합니다
+- ⚡ **Top-layer 지원**: 네이티브 HTML `<dialog>` 요소를 사용한 최상위 레이어 렌더링 지원
+- 🏗 **모듈형 아키텍처**: 용도에 맞게 분리된 컴포넌트로 유연한 사용 가능
 
 ## 설치
 
@@ -17,14 +22,7 @@ npm install grunfeld
 yarn add grunfeld
 ```
 
-## 특징
-
-- 🚀 간단한 API로 대화상자 관리
-- � 동기/비동기 대화상자 지원
-- 📱 위치 설정 가능 ('center' 또는 'bottom')
-- 🔄 다중 대화상자 스택 지원
-- 🎨 커스텀 스타일링 지원
-- 👆 Light dismiss (배경 클릭으로 닫기) 옵션
+Grunfeld는 React 애플리케이션을 위한 간단하고 가벼운 대화상자(dialog) 관리 라이브러리입니다.
 
 ## 사용법
 
@@ -41,6 +39,7 @@ function App() {
       options={{
         defaultPosition: "center",
         defaultLightDismiss: true,
+        defaultRenderMode: "inline", // 또는 "top-layer"
         backdropStyle: {
           /* 커스텀 백드롭 스타일 */
         },
@@ -65,10 +64,24 @@ function YourComponent() {
       element: <div>안녕하세요!</div>,
       position: "center",
       lightDismiss: true,
+      renderMode: "inline", // 기본 z-index 방식
     });
   };
 
-  return <button onClick={showDialog}>대화상자 열기</button>;
+  const showTopLayerDialog = () => {
+    grunfeld.add({
+      element: <div>Top-layer 대화상자!</div>,
+      position: "center",
+      renderMode: "top-layer", // 네이티브 dialog 요소 사용
+    });
+  };
+
+  return (
+    <div>
+      <button onClick={showDialog}>일반 대화상자 열기</button>
+      <button onClick={showTopLayerDialog}>Top-layer 대화상자 열기</button>
+    </div>
+  );
 }
 ```
 
@@ -147,11 +160,12 @@ grunfeld.clear();
 
 #### GrunfeldProviderOptions
 
-| 속성                | 타입                 | 기본값   | 설명                    |
-| ------------------- | -------------------- | -------- | ----------------------- |
-| defaultPosition     | 'center' \| 'bottom' | 'center' | 대화상자의 기본 위치    |
-| defaultLightDismiss | boolean              | true     | 기본 light dismiss 설정 |
-| backdropStyle       | CSSProperties        | -        | 백드롭 커스텀 스타일    |
+| 속성                | 타입                    | 기본값   | 설명                    |
+| ------------------- | ----------------------- | -------- | ----------------------- |
+| defaultPosition     | 'center' \| 'bottom'    | 'center' | 대화상자의 기본 위치    |
+| defaultLightDismiss | boolean                 | true     | 기본 light dismiss 설정 |
+| defaultRenderMode   | 'inline' \| 'top-layer' | 'inline' | 기본 렌더링 모드        |
+| backdropStyle       | CSSProperties           | -        | 백드롭 커스텀 스타일    |
 
 ### grunfeld 객체
 
@@ -172,6 +186,7 @@ type GrunfeldProps =
       position?: "center" | "bottom";
       lightDismiss?: boolean;
       dismissCallback?: () => unknown;
+      renderMode?: "inline" | "top-layer";
     }
   | React.ReactNode;
 ```
@@ -240,3 +255,119 @@ grunfeld.add({
   position: "bottom",
 });
 ```
+
+### Top-layer vs Inline 렌더링
+
+Grunfeld는 두 가지 렌더링 방식을 제공합니다:
+
+#### Inline 렌더링 (기본값)
+
+기존의 z-index 기반 방식으로, 모든 브라우저에서 안정적으로 동작합니다:
+
+```tsx
+grunfeld.add({
+  element: <MyDialog />,
+  renderMode: "inline", // z-index 사용
+});
+```
+
+**특징:**
+
+- ✅ 모든 브라우저 호환
+- ✅ 안정적인 동작
+- ✅ 커스텀 스타일링 유연함
+- ⚠️ z-index 충돌 가능성
+
+#### Top-layer 렌더링
+
+HTML 네이티브 `<dialog>` 요소를 사용하여 최상위 레이어에 렌더링합니다:
+
+```tsx
+grunfeld.add({
+  element: <MyDialog />,
+  renderMode: "top-layer", // 네이티브 dialog 사용
+});
+```
+
+**특징:**
+
+- ✅ z-index 충돌 없음
+- ✅ 브라우저 네이티브 성능
+- ✅ 자동 접근성 관리
+- ✅ 자동 ESC 키 처리
+- ⚠️ 최신 브라우저만 지원
+
+### 렌더링 모드 선택 가이드
+
+상황에 따라 적절한 렌더링 모드를 선택하세요:
+
+| 상황                     | 권장 모드   | 이유                     |
+| ------------------------ | ----------- | ------------------------ |
+| 일반적인 모달            | `inline`    | 안정적이고 호환성 좋음   |
+| z-index 충돌이 있는 환경 | `top-layer` | 최상위 레이어 보장       |
+| 고성능이 필요한 경우     | `top-layer` | 브라우저 네이티브 최적화 |
+| 레거시 브라우저 지원     | `inline`    | 광범위한 호환성          |
+
+### 개별 컴포넌트 사용
+
+고급 사용자를 위해 개별 컴포넌트를 직접 사용할 수도 있습니다:
+
+```tsx
+import { GrunfeldDialog, GrunfeldModal } from "grunfeld";
+
+function CustomDialog() {
+  return (
+    <>
+      {/* Top-layer 전용 컴포넌트 */}
+      <GrunfeldDialog
+        element={<div>네이티브 dialog</div>}
+        position="center"
+        lightDismiss={true}
+      />
+
+      {/* Z-index 전용 컴포넌트 */}
+      <GrunfeldModal
+        element={<div>Z-index modal</div>}
+        position="bottom"
+        lightDismiss={false}
+      />
+    </>
+  );
+}
+```
+
+### 조건부 렌더링 모드
+
+환경에 따라 동적으로 렌더링 모드를 선택할 수 있습니다:
+
+```tsx
+function SmartDialog() {
+  const showDialog = () => {
+    // 브라우저 지원 여부에 따라 자동 선택
+    const supportsDialog = "HTMLDialogElement" in window;
+
+    grunfeld.add({
+      element: <MyDialog />,
+      renderMode: supportsDialog ? "top-layer" : "inline",
+    });
+  };
+
+  return <button onClick={showDialog}>스마트 대화상자</button>;
+}
+```
+
+## 브라우저 호환성
+
+### Inline 렌더링 (기본값)
+
+- ✅ **모든 모던 브라우저** 지원
+- ✅ IE 11+ 지원 (React 지원 범위와 동일)
+
+### Top-layer 렌더링
+
+- ✅ **Chrome 37+**
+- ✅ **Firefox 98+**
+- ✅ **Safari 15.4+**
+- ✅ **Edge 79+**
+
+> **참고**: Top-layer 지원 여부는 런타임에 `'HTMLDialogElement' in window`로 확인할 수 있습니다.
