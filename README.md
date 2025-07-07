@@ -313,9 +313,17 @@ center-left  | center         | center-right
 bottom-left  | bottom-center  | bottom-right
 ```
 
+> **참고:** 중앙 위치는 `center` 또는 `center-center` 모두 사용 가능합니다.
+
 **사용 예시:**
 
 ```tsx
+// 중앙 배치 - 두 방식 모두 동일하게 작동
+grunfeld.add(() => ({
+  element: <Modal />,
+  position: "center", // 또는 "center-center"
+}));
+
 // 우상단 알림
 grunfeld.add(() => ({
   element: <Notification />,
