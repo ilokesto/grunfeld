@@ -1,18 +1,30 @@
 {
   "compilerOptions": {
-    "declaration": true,
-    "declarationDir": "dist",
-    "emitDeclarationOnly": false,
-    "jsx": "react-jsx",
+    "target": "ES2020",
     "module": "ESNext",
     "moduleResolution": "Node",
+    "lib": ["ES2020", "DOM"],
+    "jsx": "react-jsx",
+
+    "declaration": true,
+    "declarationMap": true,
     "outDir": "dist",
-    "target": "ESNext",
+    "rootDir": "src",
+
     "strict": true,
-    "allowJs": true,
-    "checkJs": true,
     "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+
     "types": ["jest", "node"]
   },
-  "include": ["src", "dist/Grunfeld.css.d.ts"]
+  "include": ["src/**/*"],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "**/*.test.ts",
+    "**/*.test.tsx",
+    "**/__tests__/**"
+  ]
 }

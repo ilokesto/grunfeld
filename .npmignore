@@ -6,7 +6,6 @@ src/
 .prettierrc*
 .prettierignore
 jest.config.js
-vite.config.ts
 tsconfig.json
 
 # 테스트 관련
