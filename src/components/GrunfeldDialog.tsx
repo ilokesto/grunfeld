@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import GrunfeldStore from "../store/GrunfeldStore";
 import { Position } from "../types";
+import { getPositionStyles } from "../utils/getPositionStyles";
 
 interface GrunfeldDialogProps {
   element: React.ReactNode;
@@ -46,39 +47,11 @@ export function GrunfeldDialog({
     }
   };
 
-  const getPositionStyles = (): React.CSSProperties => {
-    const baseStyles: React.CSSProperties = {
-      border: "none",
-      padding: 0,
-      background: "transparent",
-      maxWidth: "none",
-      maxHeight: "none",
-      position: "fixed",
-      left: "50%",
-    };
-
-    switch (position) {
-      case "bottom":
-        return {
-          ...baseStyles,
-          bottom: "0",
-          transform: "translateX(-50%)",
-        };
-      case "center":
-      default:
-        return {
-          ...baseStyles,
-          top: "50%",
-          transform: "translate(-50%, -50%)",
-        };
-    }
-  };
-
   return (
     <dialog
       ref={dialogRef}
       style={{
-        ...getPositionStyles(),
+        ...getPositionStyles(position),
         ...backdropStyle,
       }}
       onClick={handleBackdropClick}
