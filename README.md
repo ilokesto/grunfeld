@@ -374,6 +374,71 @@ grunfeld.clear();
 
 대화상자는 LIFO(Last In First Out) 순서로 제거됩니다. 이는 대화상자들 간의 맥락적 관계를 유지하기 위함입니다.
 
+### Promise 중단 처리
+
+`grunfeld.remove()` 또는 `grunfeld.clear()`를 호출하여 대화상자를 강제로 닫으면, 해당 대화상자의 Promise는 `undefined`로 resolve됩니다:
+
+```tsx
+// Promise가 진행 중일 때 외부에서 제거하는 경우
+const promise = grunfeld.add<boolean>((removeWith) => ({
+  element: (
+    <div>
+      <p>확인하시겠습니까?</p>
+      <button onClick={() => removeWith(true)}>예</button>
+      <button onClick={() => removeWith(false)}>아니오</button>
+    </div>
+  ),
+}));
+
+// 다른 곳에서 대화상자를 강제로 제거
+setTimeout(() => {
+  grunfeld.remove(); // promise는 undefined로 resolve됨
+}, 1000);
+
+const result = await promise; // result는 undefined
+if (result === undefined) {
+  console.log("대화상자가 중단되었습니다");
+} else if (result) {
+  console.log("사용자가 예를 선택했습니다");
+} else {
+  console.log("사용자가 아니오를 선택했습니다");
+}
+```
+
+**실용적인 예제:**
+
+```tsx
+const showConfirmWithTimeout = async () => {
+  const confirmPromise = grunfeld.add<boolean>((removeWith) => ({
+    element: (
+      <div>
+        <p>10초 안에 응답해주세요. 확인하시겠습니까?</p>
+        <button onClick={() => removeWith(true)}>확인</button>
+        <button onClick={() => removeWith(false)}>취소</button>
+      </div>
+    ),
+  }));
+
+  // 10초 후 자동으로 제거
+  const timeoutId = setTimeout(() => {
+    grunfeld.remove(); // Promise는 undefined로 resolve됨
+  }, 10000);
+
+  const result = await confirmPromise;
+  clearTimeout(timeoutId); // 사용자가 응답한 경우 타이머 제거
+
+  if (result === undefined) {
+    console.log("시간 초과로 대화상자가 닫혔습니다");
+  } else if (result) {
+    console.log("사용자가 확인을 선택했습니다");
+  } else {
+    console.log("사용자가 취소를 선택했습니다");
+  }
+};
+```
+
+이 동작은 메모리 누수를 방지하고 hanging Promise 문제를 해결합니다. 모든 Promise는 적절히 정리되므로 안전하게 사용할 수 있습니다.
+
 ## 🎯 실제 사용 예제
 
 ### 완전한 컴포넌트 예제
