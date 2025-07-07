@@ -23,6 +23,9 @@
   "keywords": [],
   "author": "Jeong Jinho <wpfekdml@me.com>",
   "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
   "peerDependencies": {
     "react": ">=18.2.0"
   },
