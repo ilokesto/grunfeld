@@ -1,7 +1,6 @@
 # Grunfeld
 
-GrunfeldsReact 애플리케이션을 위한 **간단하고 직관적인 대화상자 관리 라이브러리**입니다.  
-복잡한 상태 관리 없이 몇 줄의 코드로 모달, 알림, 확인 대화상자를 구현할 수 있습니다.
+Grunfeld는 React 애플리케이션을 위한 **간단하고 직관적인 대화상자 관리 라이브러리**입니다. 복잡한 상태 관리 없이 몇 줄의 코드로 모달, 알림, 확인 대화상자를 구현할 수 있습니다.
 
 ## ✨ 주요 특징
 
@@ -538,16 +537,10 @@ setTimeout(() => grunfeld.remove(), 2000);
 ### Position 타입
 
 ```typescript
-type Position =
-  | "top-left"
-  | "top-center"
-  | "top-right"
-  | "center-left"
-  | "center"
-  | "center-right"
-  | "bottom-left"
-  | "bottom-center"
-  | "bottom-right";
+type PositionX = "left" | "center" | "right";
+type PositionY = "top" | "center" | "bottom";
+
+type Position = `${PositionY}-${PositionX}` | "center";
 ```
 
 ## 🌐 브라우저 호환성
