@@ -29,7 +29,7 @@ function createGrunfeldStore() {
   };
 
   return {
-    add<T>(
+    add<T = void>(
       dialogFactory: DialogFactory<T>
     ): T extends void ? void : Promise<T> {
       return new Promise<T>(async (resolve, reject) => {
