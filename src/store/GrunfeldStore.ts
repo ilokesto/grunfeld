@@ -97,7 +97,6 @@ export const GrunfeldStore = createGrunfeldStore();
 
 export default {
   add: GrunfeldStore.add,
-  addAsync: GrunfeldStore.addAsync,
   remove: GrunfeldStore.remove,
   clear: GrunfeldStore.clear,
 };
