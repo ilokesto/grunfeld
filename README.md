@@ -1,6 +1,6 @@
 # Grunfeld
 
-React 애플리케이션을 위한 **간단하고 직관적인 대화상자 관리 라이브러리**입니다.  
+GrunfeldsReact 애플리케이션을 위한 **간단하고 직관적인 대화상자 관리 라이브러리**입니다.  
 복잡한 상태 관리 없이 몇 줄의 코드로 모달, 알림, 확인 대화상자를 구현할 수 있습니다.
 
 ## ✨ 주요 특징
@@ -41,9 +41,8 @@ import { grunfeld } from "grunfeld";
 
 function MyComponent() {
   const showAlert = () => {
-    grunfeld.add(() => ({
-      element: <div>안녕하세요!</div>,
-    }));
+    // 간단한 사용 - React 요소 직접 반환
+    grunfeld.add(() => <div>안녕하세요!</div>);
   };
 
   return <button onClick={showAlert}>알림 표시</button>;
@@ -65,7 +64,9 @@ const showConfirm = async () => {
   }));
 
   if (result) {
-    console.log("삭제 확인");
+    console.log("사용자가 확인을 클릭했습니다");
+  } else {
+    console.log("사용자가 취소를 클릭했습니다");
   }
 };
 ```
@@ -77,45 +78,20 @@ const showConfirm = async () => {
 타입 매개변수를 생략하면 응답을 기다리지 않는 간단한 알림으로 사용됩니다:
 
 ```tsx
-// 기본 알림
-grunfeld.add(() => ({
-  element: (
-    <div
-      style={{
-        padding: "20px",
-        background: "white",
-        borderRadius: "8px",
-        textAlign: "center",
-      }}
-    >
-      <p>저장이 완료되었습니다!</p>
-      <button onClick={() => grunfeld.remove()}>확인</button>
-    </div>
-  ),
-}));
-
-// 자동으로 사라지는 토스트 알림
-grunfeld.add(() => ({
-  element: (
-    <div
-      style={{
-        padding: "16px",
-        background: "#4CAF50",
-        color: "white",
-        borderRadius: "8px",
-        boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
-      }}
-    >
-      ✅ 성공적으로 저장되었습니다
-    </div>
-  ),
-  position: "top-right",
-  lightDismiss: false,
-  dismissCallback: () => {
-    // 3초 후 자동 제거
-    setTimeout(() => grunfeld.remove(), 3000);
-  },
-}));
+// 기본 알림 - React 요소 직접 반환
+grunfeld.add(() => (
+  <div
+    style={{
+      padding: "20px",
+      background: "white",
+      borderRadius: "8px",
+      textAlign: "center",
+    }}
+  >
+    <p>저장이 완료되었습니다!</p>
+    <button onClick={() => grunfeld.remove()}>확인</button>
+  </div>
+));
 ```
 
 ### 확인 대화상자
@@ -135,16 +111,7 @@ const confirmed = await grunfeld.add<boolean>((removeWith) => ({
     >
       <p>정말 삭제하시겠습니까?</p>
       <div>
-        <button
-          onClick={() => removeWith(true)}
-          style={{
-            marginRight: "10px",
-            backgroundColor: "#ff4444",
-            color: "white",
-          }}
-        >
-          삭제
-        </button>
+        <button onClick={() => removeWith(true)}>삭제</button>
         <button onClick={() => removeWith(false)}>취소</button>
       </div>
     </div>
@@ -164,41 +131,6 @@ if (confirmed) {
 사용자로부터 데이터를 입력받는 대화상자:
 
 ```tsx
-// 간단한 인라인 방식
-const userName = await grunfeld.add<string>((removeWith) => ({
-  element: (
-    <div style={{ padding: "20px", background: "white", borderRadius: "8px" }}>
-      <h2>이름을 입력하세요</h2>
-      <input
-        autoFocus
-        placeholder="이름을 입력하세요"
-        onKeyDown={(e) => {
-          if (e.key === "Enter" && e.currentTarget.value.trim()) {
-            removeWith(e.currentTarget.value.trim());
-          }
-        }}
-      />
-      <div style={{ marginTop: "10px" }}>
-        <button
-          onClick={(e) => {
-            const input =
-              e.currentTarget.parentElement?.parentElement?.querySelector(
-                "input"
-              );
-            if (input?.value.trim()) removeWith(input.value.trim());
-          }}
-        >
-          확인
-        </button>
-        <button onClick={() => removeWith("")} style={{ marginLeft: "10px" }}>
-          취소
-        </button>
-      </div>
-    </div>
-  ),
-}));
-
-// 컴포넌트를 사용한 방식 (권장)
 const InputModal = ({ onClose }: { onClose: (name: string) => void }) => {
   const [name, setName] = useState("");
 
@@ -237,15 +169,19 @@ const InputModal = ({ onClose }: { onClose: (name: string) => void }) => {
   );
 };
 
-// 사용법
-const result = await grunfeld.add<string>((removeWith) => ({
-  element: <InputModal onClose={removeWith} />,
-}));
-
-if (result) {
-  console.log("입력된 이름:", result);
-} else {
-  console.log("취소됨");
+export default function GrunfeldPage() {
+  return (
+    <button
+      onClick={async () => {
+        const value = await grunfeld.add<string>((removeWith) => ({
+          element: <InputModal onClose={removeWith} />,
+        }));
+        console.log(value);
+      }}
+    >
+      테스트 버튼
+    </button>
+  );
 }
 ```
 
@@ -353,33 +289,11 @@ grunfeld.add(() => ({
 // 스타일링 예제
 grunfeld.add(() => ({
   element: (
-    <div
-      style={{
-        background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-        color: "white",
-        padding: "30px",
-        borderRadius: "16px",
-        boxShadow: "0 20px 40px rgba(0,0,0,0.3)",
-        textAlign: "center",
-        minWidth: "300px",
-      }}
-    >
+    <>
       <h2>🎉 축하합니다!</h2>
       <p>작업이 성공적으로 완료되었습니다.</p>
-      <button
-        onClick={() => grunfeld.remove()}
-        style={{
-          background: "white",
-          color: "#667eea",
-          border: "none",
-          padding: "10px 20px",
-          borderRadius: "25px",
-          cursor: "pointer",
-        }}
-      >
-        확인
-      </button>
-    </div>
+      <button onClick={() => grunfeld.remove()}>확인</button>
+    </>
   ),
   position: "center",
   backdropStyle: {
@@ -422,12 +336,13 @@ grunfeld.add(() => ({
 - z-index 기반의 안정적인 방식
 - 모든 브라우저 지원
 - 커스터마이징 유연함
+- JavaScript 기반 ESC 키 처리
 
 ### Top-layer 렌더링
 
 - 네이티브 `<dialog>` 요소 사용
 - z-index 충돌 없음
-- 자동 ESC 키 처리
+- 브라우저 네이티브 ESC 키 처리
 - 최신 브라우저만 지원 (Chrome 37+, Firefox 98+, Safari 15.4+)
 
 ```tsx
@@ -446,7 +361,7 @@ grunfeld.remove();
 // 모든 대화상자 제거
 grunfeld.clear();
 
-// ESC 키로 닫기 (top-layer 모드에서 자동 지원)
+// ESC 키로 닫기
 // 또는 lightDismiss: true일 때 배경 클릭으로 닫기
 ```
 
@@ -465,23 +380,12 @@ function MyApp() {
 
   const showNotification = () => {
     grunfeld.add(() => ({
-      element: (
-        <div
-          style={{
-            padding: "16px",
-            background: "#4CAF50",
-            color: "white",
-            borderRadius: "8px",
-          }}
-        >
-          알림이 표시되었습니다!
-        </div>
-      ),
+      element: <div>알림이 표시되었습니다!</div>,
       position: "top-right",
-      dismissCallback: () => {
-        setTimeout(() => grunfeld.remove(), 2000);
-      },
     }));
+
+    // 2초 후 자동으로 제거
+    setTimeout(() => grunfeld.remove(), 2000);
   };
 
   const showConfirm = async () => {
@@ -551,10 +455,38 @@ const InputDialog = ({ onSubmit }: { onSubmit: (value: string) => void }) => {
 
 - `dialogFactory`: 대화상자를 생성하는 함수
   - `(removeWith: (data: T) => void) => GrunfeldProps | Promise<GrunfeldProps>`
+  - `GrunfeldProps`는 다음 중 하나:
+    - React 요소 직접 반환: `React.ReactNode`
+    - 옵션이 포함된 객체: `{ element: React.ReactNode; position?: Position; ... }`
 
 **반환값:**
 
 - 항상 `Promise<T>` 반환 (내부적으로 TypeScript 조건부 타입 처리)
+
+**사용 예시:**
+
+```tsx
+// 1. 간단한 사용법 - React 요소 직접 반환
+grunfeld.add(() => <div>간단한 알림</div>);
+
+// 2. 옵션과 함께 사용 - 객체 반환
+grunfeld.add(() => ({
+  element: <div>위치가 지정된 알림</div>,
+  position: "top-right",
+  lightDismiss: false,
+}));
+
+// 3. 사용자 응답 받기
+const result = await grunfeld.add<boolean>((removeWith) => ({
+  element: (
+    <div>
+      <p>확인하시겠습니까?</p>
+      <button onClick={() => removeWith(true)}>예</button>
+      <button onClick={() => removeWith(false)}>아니오</button>
+    </div>
+  ),
+}));
+```
 
 **GrunfeldProps:**
 
@@ -564,9 +496,27 @@ const InputDialog = ({ onSubmit }: { onSubmit: (value: string) => void }) => {
   position?: Position;                   // 위치 (기본: "center")
   lightDismiss?: boolean;                // 배경 클릭으로 닫기 (기본: true)
   backdropStyle?: React.CSSProperties;   // 백드롭 스타일
-  dismissCallback?: () => unknown;       // 닫힐 때 실행할 함수
+  dismissCallback?: () => unknown;       // 닫힐 때 실행할 함수 (주의: 여기서 grunfeld.remove() 호출 금지)
   renderMode?: "inline" | "top-layer";   // 렌더링 모드
 }
+```
+
+**⚠️ 중요:** `dismissCallback`은 대화상자가 제거될 때 실행되므로, 이 함수 내에서 `grunfeld.remove()`나 `grunfeld.clear()`를 호출하면 안 됩니다. 자동으로 사라지는 알림을 만들려면 `setTimeout`을 대화상자 생성 후에 별도로 실행하세요:
+
+```tsx
+// ❌ 잘못된 방법
+grunfeld.add(() => ({
+  element: <div>알림</div>,
+  dismissCallback: () => {
+    setTimeout(() => grunfeld.remove(), 2000); // 무한 루프 위험
+  },
+}));
+
+// ✅ 올바른 방법
+grunfeld.add(() => ({
+  element: <div>알림</div>,
+}));
+setTimeout(() => grunfeld.remove(), 2000);
 ```
 
 ### `grunfeld.remove()`
@@ -596,7 +546,3 @@ type Position =
 
 **Inline 렌더링:** 모든 모던 브라우저 + IE 11+
 **Top-layer 렌더링:** Chrome 37+, Firefox 98+, Safari 15.4+, Edge 79+
-
-```
-
-```
