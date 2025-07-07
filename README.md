@@ -7,7 +7,7 @@ Grunfeld는 React 애플리케이션을 위한 **간단하고 가벼운 대화�
 
 - 🚀 **간단한 API**: 복잡한 상태 관리 없이 몇 줄의 코드로 대화상자를 관리할 수 있습니다
 - 🎯 **동기/비동기 지원**: 일반적인 알림부터 사용자 응답이 필요한 확인 대화상자까지 모든 시나리오를 지원합니다
-- 📱 **유연한 위치 설정**: 중앙 모달, 하단 시트 등 다양한 UI 패턴에 맞춰 위치를 조정할 수 있습니다
+- 📱 **유연한 위치 설정**: 9분할 그리드 시스템으로 화면의 어느 위치든 정확하게 배치 가능합니다
 - 🔄 **스마트한 스택 관리**: 여러 대화상자가 열릴 때 논리적인 LIFO(Last In First Out) 순서로 관리됩니다
 - 🎨 **커스텀 스타일링**: 백드롭 스타일부터 개별 대화상자 스타일까지 자유롭게 커스터마이징 가능합니다
 - 👆 **직관적인 UX**: 배경 클릭으로 닫기, 자동 포커스 관리 등 사용자 경험을 고려한 기능들을 제공합니다
@@ -206,10 +206,41 @@ grunfeld.clear();
 
 | 속성                | 타입                    | 기본값   | 설명                    |
 | ------------------- | ----------------------- | -------- | ----------------------- |
-| defaultPosition     | 'center' \| 'bottom'    | 'center' | 대화상자의 기본 위치    |
+| defaultPosition     | Position                | 'center' | 대화상자의 기본 위치    |
 | defaultLightDismiss | boolean                 | true     | 기본 light dismiss 설정 |
 | defaultRenderMode   | 'inline' \| 'top-layer' | 'inline' | 기본 렌더링 모드        |
 | backdropStyle       | CSSProperties           | -        | 백드롭 커스텀 스타일    |
+
+#### Position 타입
+
+Grunfeld는 화면을 9분할한 그리드 시스템을 사용하여 대화상자를 정확한 위치에 배치할 수 있습니다:
+
+```typescript
+type Position =
+  | "top-left"
+  | "top-center"
+  | "top-right"
+  | "center-left"
+  | "center"
+  | "center-right"
+  | "bottom-left"
+  | "bottom-center"
+  | "bottom-right";
+```
+
+**위치별 설명:**
+
+| 위치            | 설명                 | 사용 사례               |
+| --------------- | -------------------- | ----------------------- |
+| `top-left`      | 왼쪽 상단 모서리     | 알림, 미니 메뉴         |
+| `top-center`    | 상단 중앙            | 헤더 알림, 상단 배너    |
+| `top-right`     | 오른쪽 상단 모서리   | 사용자 메뉴, 알림       |
+| `center-left`   | 왼쪽 세로 중앙       | 사이드 패널, 네비게이션 |
+| `center`        | 완전한 중앙 (기본값) | 모달, 확인 대화상자     |
+| `center-right`  | 오른쪽 세로 중앙     | 도구 모음, 설정 패널    |
+| `bottom-left`   | 왼쪽 하단 모서리     | 상태 표시기             |
+| `bottom-center` | 하단 중앙            | 바텀 시트, 액션 시트    |
+| `bottom-right`  | 오른쪽 하단 모서리   | 플로팅 액션 버튼, 채팅  |
 
 ### grunfeld 객체
 
@@ -252,7 +283,7 @@ const result = await grunfeld.add<UserData>(async (removeWith) => {
 ```typescript
 type GrunfeldProps = {
   element: React.ReactNode;
-  position?: "center" | "bottom";
+  position?: Position; // 9분할 그리드 위치
   lightDismiss?: boolean;
   dismissCallback?: () => unknown;
   renderMode?: "inline" | "top-layer";
@@ -296,19 +327,43 @@ grunfeld.add(() => ({
 
 ### 위치별 대화상자
 
-다양한 UI 패턴에 맞춰 대화상자의 위치를 조정할 수 있습니다. 각 위치는 서로 다른 사용자 경험을 제공합니다:
+Grunfeld의 9분할 그리드 시스템을 사용하여 다양한 UI 패턴에 맞춰 대화상자를 정확한 위치에 배치할 수 있습니다:
 
 ```tsx
-// 중앙에 표시
+// 중앙 모달 (기본값)
 grunfeld.add(() => ({
   element: <CenterDialog />,
   position: "center",
 }));
 
-// 하단에 표시 (바텀 시트 스타일)
+// 바텀 시트
 grunfeld.add(() => ({
   element: <BottomSheet />,
-  position: "bottom",
+  position: "bottom-center",
+}));
+
+// 상단 알림
+grunfeld.add(() => ({
+  element: <Notification />,
+  position: "top-right",
+}));
+
+// 사이드 패널
+grunfeld.add(() => ({
+  element: <SidePanel />,
+  position: "center-left",
+}));
+
+// 플로팅 액션 버튼 메뉴
+grunfeld.add(() => ({
+  element: <FABMenu />,
+  position: "bottom-right",
+}));
+
+// 툴팁이나 컨텍스트 메뉴
+grunfeld.add(() => ({
+  element: <ContextMenu />,
+  position: "top-left",
 }));
 ```
 

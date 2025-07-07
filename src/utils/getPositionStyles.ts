@@ -1,35 +1,38 @@
 import { Position } from "../types";
 
-export const getPositionStyles = (position: Position): React.CSSProperties => {
+export const getPositionStyles = (
+  position: Position,
+  useAbsolute: boolean = false
+): React.CSSProperties => {
   const baseStyles: React.CSSProperties = {
-    position: "fixed",
+    position: useAbsolute ? "absolute" : "fixed",
   };
 
   switch (position) {
     case "top-left":
       return {
         ...baseStyles,
-        top: "20px",
-        left: "20px",
+        top: "0px",
+        left: "0px",
       };
     case "top-center":
       return {
         ...baseStyles,
-        top: "20px",
+        top: "0px",
         left: "50%",
         transform: "translateX(-50%)",
       };
     case "top-right":
       return {
         ...baseStyles,
-        top: "20px",
-        right: "20px",
+        top: "0px",
+        right: "0px",
       };
     case "center-left":
       return {
         ...baseStyles,
         top: "50%",
-        left: "20px",
+        left: "0px",
         transform: "translateY(-50%)",
       };
     case "center":
@@ -43,27 +46,27 @@ export const getPositionStyles = (position: Position): React.CSSProperties => {
       return {
         ...baseStyles,
         top: "50%",
-        right: "20px",
+        right: "0px",
         transform: "translateY(-50%)",
       };
     case "bottom-left":
       return {
         ...baseStyles,
-        bottom: "20px",
-        left: "20px",
+        bottom: "0px",
+        left: "0px",
       };
     case "bottom-center":
       return {
         ...baseStyles,
-        bottom: "20px",
+        bottom: "0px",
         left: "50%",
         transform: "translateX(-50%)",
       };
     case "bottom-right":
       return {
         ...baseStyles,
-        bottom: "20px",
-        right: "20px",
+        bottom: "0px",
+        right: "0px",
       };
     default:
       return {

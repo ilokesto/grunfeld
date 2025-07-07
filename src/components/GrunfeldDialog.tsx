@@ -1,21 +1,14 @@
 import { useEffect, useRef } from "react";
 import GrunfeldStore from "../store/GrunfeldStore";
-import { Position } from "../types";
+import { GrunfeldElementProps } from "../types";
 import { getPositionStyles } from "../utils/getPositionStyles";
-
-interface GrunfeldDialogProps {
-  element: React.ReactNode;
-  position: Position;
-  lightDismiss: boolean;
-  backdropStyle?: React.CSSProperties;
-}
 
 export function GrunfeldDialog({
   element,
-  position,
+  position = "center",
   lightDismiss,
   backdropStyle,
-}: GrunfeldDialogProps) {
+}: GrunfeldElementProps & { backdropStyle?: React.CSSProperties }) {
   const dialogRef = useRef<HTMLDialogElement>(null);
 
   // Dialog를 top-layer에 표시하고 이벤트 관리
@@ -41,6 +34,39 @@ export function GrunfeldDialog({
     };
   }, []);
 
+  // backdropStyle을 dialog::backdrop에 적용
+  useEffect(() => {
+    if (!backdropStyle) return;
+
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+
+    // 고유한 클래스명 생성
+    const className = `grunfeld-dialog-${Math.random()
+      .toString(36)
+      .substr(2, 9)}`;
+    dialog.classList.add(className);
+
+    // CSS 규칙 생성
+    const cssRules = Object.entries(backdropStyle)
+      .map(([key, value]) => {
+        const cssProperty = key.replace(/([A-Z])/g, "-$1").toLowerCase();
+        return `${cssProperty}: ${value};`;
+      })
+      .join(" ");
+
+    // 스타일 요소 생성 및 삽입
+    const styleElement = document.createElement("style");
+    styleElement.textContent = `.${className}::backdrop { ${cssRules} }`;
+    document.head.appendChild(styleElement);
+
+    return () => {
+      // 정리: 스타일 요소 제거
+      document.head.removeChild(styleElement);
+      dialog.classList.remove(className);
+    };
+  }, [backdropStyle]);
+
   const handleBackdropClick = (event: React.MouseEvent) => {
     if (event.target === event.currentTarget && lightDismiss) {
       GrunfeldStore.remove();
@@ -51,13 +77,18 @@ export function GrunfeldDialog({
     <dialog
       ref={dialogRef}
       style={{
-        ...getPositionStyles(position),
-        ...backdropStyle,
+        padding: 0,
+        border: "none",
+        background: "transparent",
+        width: "100vw",
+        height: "100vh",
+        maxWidth: "none",
+        maxHeight: "none",
       }}
       onClick={handleBackdropClick}
       aria-modal="true"
     >
-      {element}
+      <div style={getPositionStyles(position, true)}>{element}</div>
     </dialog>
   );
 }
