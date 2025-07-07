@@ -1,4 +1,4 @@
-import { BackdropStyle, GrunfeldElementProps } from "../types";
+import { GrunfeldElementProps } from "../types";
 import { GrunfeldDialog } from "./GrunfeldDialog";
 import { GrunfeldModal } from "./GrunfeldModal";
 
@@ -8,7 +8,7 @@ export function Grunfeld({
   lightDismiss = true,
   backdropStyle,
   renderMode = "inline",
-}: GrunfeldElementProps & BackdropStyle) {
+}: GrunfeldElementProps) {
   // useTopLayer에 따라 조건부 렌더링
   if (renderMode === "top-layer") {
     return (

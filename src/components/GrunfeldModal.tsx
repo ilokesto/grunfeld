@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import GrunfeldStore from "../store/GrunfeldStore";
-import { BackdropStyle, GrunfeldElementProps } from "../types";
+import { GrunfeldElementProps } from "../types";
 import { getPositionStyles } from "../utils/getPositionStyles";
 
 export function GrunfeldModal({
@@ -8,7 +8,7 @@ export function GrunfeldModal({
   position = "center",
   lightDismiss,
   backdropStyle,
-}: GrunfeldElementProps & BackdropStyle) {
+}: GrunfeldElementProps) {
   const dialogRef = useRef<HTMLDivElement>(null);
 
   // ESC 키로 대화상자 닫기
@@ -61,17 +61,31 @@ export function GrunfeldModal({
     }
   };
 
+  // backdropStyle 처리
+  const getBackdropStyles = () => {
+    const baseStyles = {
+      position: "fixed" as const,
+      top: 0,
+      bottom: 0,
+      right: 0,
+      left: 0,
+      zIndex: 1000,
+    };
+
+    if (!backdropStyle) {
+      return baseStyles;
+    }
+
+    // 객체인 경우 스프레드로 적용
+    return {
+      ...baseStyles,
+      ...backdropStyle,
+    };
+  };
+
   return (
     <div
-      style={{
-        position: "fixed",
-        top: 0,
-        bottom: 0,
-        right: 0,
-        left: 0,
-        background: backdropStyle ?? "rgba(0, 0, 0, 0.3)",
-        zIndex: 1000,
-      }}
+      style={getBackdropStyles()}
       onClick={handleBackdropClick}
       aria-hidden="true"
     >

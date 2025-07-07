@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import GrunfeldStore from "../store/GrunfeldStore";
-import { BackdropStyle, GrunfeldElementProps } from "../types";
+import { GrunfeldElementProps } from "../types";
 import { getPositionStyles } from "../utils/getPositionStyles";
 
 export function GrunfeldDialog({
@@ -8,7 +8,7 @@ export function GrunfeldDialog({
   position = "center",
   lightDismiss,
   backdropStyle,
-}: GrunfeldElementProps & BackdropStyle) {
+}: GrunfeldElementProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
 
   // Dialog를 top-layer에 표시하고 이벤트 관리
@@ -41,22 +41,76 @@ export function GrunfeldDialog({
     const dialog = dialogRef.current;
     if (!dialog) return;
 
-    // 고유한 클래스명 생성
-    const className = `grunfeld-dialog-${Math.random()
-      .toString(36)
-      .substr(2, 9)}`;
+    // 브라우저에서 ::backdrop 지원 여부 확인
+    const supportsBackdrop =
+      CSS.supports("selector(::backdrop)") ||
+      CSS.supports("selector(::-webkit-backdrop)");
+
+    if (process.env.NODE_ENV === "development" && !supportsBackdrop) {
+      console.warn(
+        "Grunfeld: ::backdrop pseudo-element is not supported in this browser"
+      );
+    }
+
+    // 고유한 클래스명 생성 (더 안전한 방식)
+    const timestamp = Date.now();
+    const random = Math.random().toString(36).substring(2, 8);
+    const className = `grunfeld-dialog-${timestamp}-${random}`;
     dialog.classList.add(className);
 
     // 스타일 요소 생성 및 삽입
     const styleElement = document.createElement("style");
-    styleElement.textContent = `.${className}::backdrop { background: ${
-      backdropStyle ?? "rgba(0, 0, 0, 0.3)"
-    } }`;
-    document.head.appendChild(styleElement);
+
+    // CSSProperties 객체를 CSS 문자열로 변환 (개선된 변환 로직)
+    const cssText = Object.entries(backdropStyle)
+      .map(([key, value]) => {
+        // camelCase를 kebab-case로 변환 (더 정확한 변환)
+        const cssProperty = key
+          .replace(/([a-z0-9])([A-Z])/g, "$1-$2")
+          .toLowerCase();
+
+        // 값에 세미콜론이나 중괄호가 있으면 이스케이프
+        const safeValue = String(value).replace(/[;{}]/g, "");
+
+        return `${cssProperty}: ${safeValue}`;
+      })
+      .join("; ");
+
+    // !important를 추가해서 특이성 문제 해결
+    const backdropRule = `.${className}::backdrop { ${cssText} !important; }`;
+
+    // 브라우저별 벤더 프리픽스도 함께 추가
+    styleElement.textContent = [
+      backdropRule,
+      `.${className}::-webkit-backdrop { ${cssText} !important; }`, // Webkit 브라우저용
+    ].join("\n");
+
+    // head에 추가하기 전에 기존 스타일 확인
+    const existingStyle = document.head.querySelector(
+      `style[data-grunfeld="${className}"]`
+    );
+    if (!existingStyle) {
+      styleElement.setAttribute("data-grunfeld", className);
+      document.head.appendChild(styleElement);
+
+      // 디버깅: 스타일이 제대로 적용되었는지 확인
+      if (process.env.NODE_ENV === "development") {
+        console.log("Grunfeld backdrop style applied:", {
+          className,
+          cssText,
+          backdropRule,
+        });
+      }
+    }
 
     return () => {
       // 정리: 스타일 요소 제거
-      document.head.removeChild(styleElement);
+      const styleToRemove = document.head.querySelector(
+        `style[data-grunfeld="${className}"]`
+      );
+      if (styleToRemove) {
+        document.head.removeChild(styleToRemove);
+      }
       dialog.classList.remove(className);
     };
   }, [backdropStyle]);
