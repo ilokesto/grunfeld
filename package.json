@@ -10,7 +10,7 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "build": "npx tsc",
+    "build": "rm -rf dist && npx tsc",
     "build:watch": "npx tsc --watch",
     "clean": "rm -rf dist",
     "format": "prettier --write .",
