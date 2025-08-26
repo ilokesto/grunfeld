@@ -42,7 +42,7 @@ import { grunfeld } from "grunfeld";
 
 function MyComponent() {
   const showAlert = () => {
-    // 간단한 사용 - React 요소 직접 반환
+    // 간단한 알림 - void 반환 (반환값 없음)
     grunfeld.add(() => <div>안녕하세요!</div>);
   };
 
@@ -76,7 +76,7 @@ const showConfirm = async () => {
 
 ### 알림 대화상자
 
-타입 매개변수를 생략하면 응답을 기다리지 않는 간단한 알림으로 사용됩니다:
+매개변수 없는 팩토리 함수를 사용하면 간단한 알림으로 동작합니다 (void 반환):
 
 ```tsx
 // 기본 알림 - React 요소 직접 반환
@@ -525,32 +525,29 @@ const InputDialog = ({ onSubmit }: { onSubmit: (value: string) => void }) => {
 
 ### `grunfeld.add<T>(dialogFactory)`
 
-**매개변수:**
+**두 가지 오버로드:**
 
-- `dialogFactory`: 대화상자를 생성하는 함수
-  - `(removeWith: (data: T) => void) => GrunfeldProps | Promise<GrunfeldProps>`
-  - `GrunfeldProps`는 다음 중 하나:
-    - React 요소 직접 반환: `React.ReactNode`
-    - 옵션이 포함된 객체: `{ element: React.ReactNode; position?: Position; ... }`
-
-**반환값:**
-
-- 항상 `Promise<T>` 반환 (내부적으로 TypeScript 조건부 타입 처리)
+1. **간단한 알림 (매개변수 없음):**
+   - `grunfeld.add(() => React.ReactNode | GrunfeldProps): void`
+   - 즉시 실행되고 반환값 없음 (동기)
+2. **사용자 응답 받기 (매개변수 있음):**
+   - `grunfeld.add<T>((removeWith: (data: T) => void) => GrunfeldProps): Promise<T>`
+   - 사용자 응답을 기다림 (비동기)
 
 **사용 예시:**
 
 ```tsx
-// 1. 간단한 사용법 - React 요소 직접 반환
+// 1. 간단한 알림 - 반환값 없음
 grunfeld.add(() => <div>간단한 알림</div>);
 
-// 2. 옵션과 함께 사용 - 객체 반환
+// 옵션과 함께
 grunfeld.add(() => ({
   element: <div>위치가 지정된 알림</div>,
   position: "top-right",
   lightDismiss: false,
 }));
 
-// 3. 사용자 응답 받기
+// 2. 사용자 응답 받기 - Promise 반환
 const result = await grunfeld.add<boolean>((removeWith) => ({
   element: (
     <div>
@@ -559,6 +556,11 @@ const result = await grunfeld.add<boolean>((removeWith) => ({
       <button onClick={() => removeWith(false)}>아니오</button>
     </div>
   ),
+}));
+
+// 문자열 입력 받기
+const input = await grunfeld.add<string>((removeWith) => ({
+  element: <InputForm onSubmit={removeWith} />,
 }));
 ```
 

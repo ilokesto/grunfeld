@@ -42,7 +42,7 @@ import { grunfeld } from "grunfeld";
 
 function MyComponent() {
   const showAlert = () => {
-    // Simple usage – return a React element directly
+    // Simple alert - void return (no return value)
     grunfeld.add(() => <div>Hello!</div>);
   };
 
@@ -525,32 +525,29 @@ const InputDialog = ({ onSubmit }: { onSubmit: (value: string) => void }) => {
 
 ### `grunfeld.add<T>(dialogFactory)`
 
-**Parameters:**
+**Two overloads:**
 
-- `dialogFactory`: Function to create the dialog
-  - `(removeWith: (data: T) => void) => GrunfeldProps | Promise<GrunfeldProps>`
-  - `GrunfeldProps` can be:
-    - Return a React element directly: `React.ReactNode`
-    - Object with options: `{ element: React.ReactNode; position?: Position; ... }`
-
-**Return Value:**
-
-- Always returns a `Promise<T>` (handled internally with TypeScript conditional types)
+1. **Simple alerts (no parameters):**
+   - `grunfeld.add(() => React.ReactNode | GrunfeldProps): void`
+   - Executes immediately with no return value (synchronous)
+2. **Get user response (with parameters):**
+   - `grunfeld.add<T>((removeWith: (data: T) => void) => GrunfeldProps): Promise<T>`
+   - Waits for user response (asynchronous)
 
 **Usage Example:**
 
 ```tsx
-// 1. Simple usage – return a React element directly
+// 1. Simple alert - no return value
 grunfeld.add(() => <div>Simple alert</div>);
 
-// 2. With options – return an object
+// With options
 grunfeld.add(() => ({
   element: <div>Alert with position</div>,
   position: "top-right",
   lightDismiss: false,
 }));
 
-// 3. Get user response
+// 2. Get user response - returns Promise
 const result = await grunfeld.add<boolean>((removeWith) => ({
   element: (
     <div>
@@ -560,7 +557,22 @@ const result = await grunfeld.add<boolean>((removeWith) => ({
     </div>
   ),
 }));
+
+// Get string input
+const input = await grunfeld.add<string>((removeWith) => ({
+  element: <InputForm onSubmit={removeWith} />,
+}));
 ```
+
+      <p>Are you sure?</p>
+      <button onClick={() => removeWith(true)}>Yes</button>
+      <button onClick={() => removeWith(false)}>No</button>
+    </div>
+
+),
+}));
+
+````
 
 **GrunfeldProps:**
 
@@ -573,7 +585,7 @@ const result = await grunfeld.add<boolean>((removeWith) => ({
   dismissCallback?: () => unknown;       // Function to run when dialog closes (do NOT call grunfeld.remove() here)
   renderMode?: "inline" | "top-layer";   // Render mode
 }
-```
+````
 
 **⚠️ Important:** `dismissCallback` runs when the dialog is removed, so do NOT call `grunfeld.remove()` or `grunfeld.clear()` inside it. To make an auto-dismissing alert, use setTimeout after creating the dialog:
 
