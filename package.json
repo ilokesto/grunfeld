@@ -10,8 +10,8 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "build": "rm -rf dist && npx tsc",
-    "build:watch": "npx tsc --watch",
+    "build": "rm -rf dist && pnpm exec tsc",
+    "build:watch": "pnpm exec tsc --watch",
     "clean": "rm -rf dist",
     "format": "prettier --write .",
     "format:check": "prettier --check ."

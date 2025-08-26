@@ -5,11 +5,20 @@ import { hashManager } from "./GrunfeldHashManager";
 type Store = Array<GrunfeldProps>;
 type Callback = () => void;
 type RemoveWithFunction<T> = (data: T) => void;
-type DialogFactory<T> = (
-  removeWith: RemoveWithFunction<T>
-) => GrunfeldProps | Promise<GrunfeldProps>;
+interface IGrunfeldStore {
+  add: {
+    (dialogFactory: () => GrunfeldProps): undefined;
+    <T>(
+      dialogFactory: (removeWith: RemoveWithFunction<T>) => GrunfeldProps
+    ): Promise<T>;
+  };
+  remove(): void;
+  clear(): void;
+  getStore(): Store;
+  subscribe(callback: Callback): () => void;
+}
 
-function createGrunfeldStore() {
+function createGrunfeldStore(): IGrunfeldStore {
   const callbacks = new Set<Callback>();
   let store: Store = [];
   // Map을 사용하여 모든 타입의 GrunfeldProps를 키로 사용
@@ -31,64 +40,76 @@ function createGrunfeldStore() {
   };
 
   return {
-    add<T = void>(
-      dialogFactory: DialogFactory<T>
-    ): T extends void ? void : Promise<T> {
+    add(dialogFactory: any): any {
       if (typeof dialogFactory !== "function") {
         throw new Error("dialogFactory must be a function");
       }
 
-      return new Promise<T>((resolve, reject) => {
-        let dialogProps: GrunfeldProps;
-        let isResolved = false;
-        const abortController = new AbortController();
+      // 함수의 매개변수 개수로 오버로드를 구분
+      if (dialogFactory.length === 0) {
+        // 첫 번째 오버로드: () => GrunfeldProps -> undefined (동기)
+        try {
+          const factoryResult = dialogFactory();
 
-        // AbortController의 signal에 abort 이벤트 리스너 추가
-        abortController.signal.addEventListener("abort", () => {
-          if (!isResolved) {
-            isResolved = true;
-            // remove()에 의해 중단된 경우 undefined로 resolve
-            resolve(undefined as T);
+          // 동기적으로 처리
+          if (!hashManager.tryAddDialog(factoryResult)) {
+            logger.warn("Duplicate dialog prevented");
+            return undefined;
           }
-        });
 
-        const removeWith: RemoveWithFunction<T> = (data: T) => {
-          if (isResolved) return;
+          store.push(factoryResult);
+          notifyCallbacks();
+          return undefined;
+        } catch (error) {
+          logger.error("Error in dialogFactory", error);
+          return undefined;
+        }
+      } else {
+        // 두 번째 오버로드: <T>(removeWith: RemoveWithFunction<T>) => GrunfeldProps
+        return new Promise<any>((resolve, reject) => {
+          let dialogProps: GrunfeldProps;
+          let isResolved = false;
+          const abortController = new AbortController();
 
-          try {
-            const index = store.indexOf(dialogProps);
-            if (index !== -1) {
-              hashManager.removeDialog(dialogProps);
-              store.splice(index, 1);
-              dismissDialog(dialogProps);
-              // AbortController 정리
-              abortControllers.delete(dialogProps);
-              notifyCallbacks();
-            }
-
-            isResolved = true;
-            resolve(data);
-          } catch (error) {
-            logger.error("Error in removeWith callback", error);
+          // AbortController의 signal에 abort 이벤트 리스너 추가
+          abortController.signal.addEventListener("abort", () => {
             if (!isResolved) {
               isResolved = true;
-              reject(error);
+              // remove()에 의해 중단된 경우 undefined로 resolve
+              resolve(undefined);
             }
-          }
-        };
+          });
 
-        try {
-          const factoryResult = dialogFactory(removeWith);
+          const removeWith = (data: any) => {
+            if (isResolved) return;
 
-          // Promise인지 확인
-          if (
-            factoryResult &&
-            typeof factoryResult === "object" &&
-            "then" in factoryResult &&
-            typeof (factoryResult as any).then === "function"
-          ) {
-            // 비동기 dialogFactory 처리
-            (factoryResult as Promise<GrunfeldProps>)
+            try {
+              const index = store.indexOf(dialogProps);
+              if (index !== -1) {
+                hashManager.removeDialog(dialogProps);
+                store.splice(index, 1);
+                dismissDialog(dialogProps);
+                // AbortController 정리
+                abortControllers.delete(dialogProps);
+                notifyCallbacks();
+              }
+
+              isResolved = true;
+              resolve(data);
+            } catch (error) {
+              logger.error("Error in removeWith callback", error);
+              if (!isResolved) {
+                isResolved = true;
+                reject(error);
+              }
+            }
+          };
+
+          try {
+            const factoryResult = dialogFactory(removeWith);
+
+            // 동기/비동기 구분 없이 Promise로 통일 처리
+            Promise.resolve(factoryResult)
               .then((props) => {
                 if (abortController.signal.aborted) return;
 
@@ -97,10 +118,10 @@ function createGrunfeldStore() {
                 abortControllers.set(dialogProps, abortController);
 
                 if (!hashManager.tryAddDialog(dialogProps)) {
-                  logger.warn("Duplicate async dialog prevented");
+                  logger.warn("Duplicate dialog prevented");
                   if (!isResolved) {
                     isResolved = true;
-                    resolve({} as T);
+                    resolve(undefined);
                   }
                   return;
                 }
@@ -111,40 +132,21 @@ function createGrunfeldStore() {
               .catch((error) => {
                 if (abortController.signal.aborted) return;
 
-                logger.error("Error in async dialogFactory", error);
+                logger.error("Error in dialogFactory", error);
                 if (!isResolved) {
                   isResolved = true;
                   reject(error);
                 }
               });
-          } else {
-            // 동기적 dialogFactory 처리
-            if (abortController.signal.aborted) return;
-
-            dialogProps = factoryResult as GrunfeldProps;
-            // AbortController를 dialogProps와 연결
-            abortControllers.set(dialogProps, abortController);
-
-            if (!hashManager.tryAddDialog(dialogProps)) {
-              logger.warn("Duplicate dialog prevented");
-              if (!isResolved) {
-                isResolved = true;
-                resolve({} as T);
-              }
-              return;
+          } catch (error) {
+            logger.error("Error in dialogFactory", error);
+            if (!isResolved) {
+              isResolved = true;
+              reject(error);
             }
-
-            store.push(dialogProps);
-            notifyCallbacks();
           }
-        } catch (error) {
-          logger.error("Error in dialogFactory", error);
-          if (!isResolved) {
-            isResolved = true;
-            reject(error);
-          }
-        }
-      }) as any;
+        });
+      }
     },
 
     remove() {
