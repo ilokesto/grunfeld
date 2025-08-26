@@ -4,18 +4,17 @@ import { hashManager } from "./GrunfeldHashManager";
 
 type Store = Array<GrunfeldProps>;
 type Callback = () => void;
-type RemoveWithFunction<T> = (data: T) => void;
 interface IGrunfeldStore {
   add: {
     (dialogFactory: () => GrunfeldProps): undefined;
     <T>(
-      dialogFactory: (removeWith: RemoveWithFunction<T>) => GrunfeldProps
+      dialogFactory: (removeWith: (data: T) => void) => GrunfeldProps
     ): Promise<T>;
   };
   remove(): void;
   clear(): void;
   getStore(): Store;
-  subscribe(callback: Callback): () => void;
+  subscribe(callback: Callback): Callback;
 }
 
 function createGrunfeldStore(): IGrunfeldStore {
