@@ -6,7 +6,7 @@ type Store = Array<GrunfeldProps>;
 type Callback = () => void;
 interface IGrunfeldStore {
   add: {
-    (dialogFactory: () => GrunfeldProps): undefined;
+    (dialogFactory: () => GrunfeldProps): void;
     <T>(
       dialogFactory: (removeWith: (data: T) => void) => GrunfeldProps
     ): Promise<T>;
@@ -46,22 +46,20 @@ function createGrunfeldStore(): IGrunfeldStore {
 
       // 함수의 매개변수 개수로 오버로드를 구분
       if (dialogFactory.length === 0) {
-        // 첫 번째 오버로드: () => GrunfeldProps -> undefined (동기)
+        // 첫 번째 오버로드: () => GrunfeldProps -> void (동기)
         try {
           const factoryResult = dialogFactory();
 
           // 동기적으로 처리
           if (!hashManager.tryAddDialog(factoryResult)) {
             logger.warn("Duplicate dialog prevented");
-            return undefined;
+            return;
           }
 
           store.push(factoryResult);
           notifyCallbacks();
-          return undefined;
         } catch (error) {
           logger.error("Error in dialogFactory", error);
-          return undefined;
         }
       } else {
         // 두 번째 오버로드: <T>(removeWith: RemoveWithFunction<T>) => GrunfeldProps
