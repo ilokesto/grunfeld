@@ -531,7 +531,7 @@ const InputDialog = ({ onSubmit }: { onSubmit: (value: string) => void }) => {
    - `grunfeld.add(() => React.ReactNode | GrunfeldProps): void`
    - 즉시 실행되고 반환값 없음 (동기)
 2. **사용자 응답 받기 (매개변수 있음):**
-   - `grunfeld.add<T>((removeWith: (data: T) => void) => GrunfeldProps): Promise<T>`
+   - `grunfeld.add<T>((removeWith: (data: T) => void) => GrunfeldProps): Promise<T | undefined>`
    - 사용자 응답을 기다림 (비동기)
 
 **사용 예시:**

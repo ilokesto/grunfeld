@@ -531,7 +531,7 @@ const InputDialog = ({ onSubmit }: { onSubmit: (value: string) => void }) => {
    - `grunfeld.add(() => React.ReactNode | GrunfeldProps): void`
    - Executes immediately with no return value (synchronous)
 2. **Get user response (with parameters):**
-   - `grunfeld.add<T>((removeWith: (data: T) => void) => GrunfeldProps): Promise<T>`
+   - `grunfeld.add<T>((removeWith: (data: T) => void) => GrunfeldProps): Promise<T | undefined>`
    - Waits for user response (asynchronous)
 
 **Usage Example:**
