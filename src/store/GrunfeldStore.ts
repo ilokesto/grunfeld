@@ -64,7 +64,7 @@ function createGrunfeldStore(): IGrunfeldStore {
         }
       } else {
         // 두 번째 오버로드: <T>(removeWith: RemoveWithFunction<T>) => GrunfeldProps
-        return new Promise<any>((resolve, reject) => {
+        return new Promise((resolve, reject) => {
           let dialogProps: GrunfeldProps;
           let isResolved = false;
           const abortController = new AbortController();
@@ -106,36 +106,24 @@ function createGrunfeldStore(): IGrunfeldStore {
           try {
             const factoryResult = dialogFactory(removeWith);
 
-            // 동기/비동기 구분 없이 Promise로 통일 처리
-            Promise.resolve(factoryResult)
-              .then((props) => {
-                if (abortController.signal.aborted) return;
+            // 동기적으로 처리
+            if (abortController.signal.aborted) return;
 
-                dialogProps = props;
-                // AbortController를 dialogProps와 연결
-                abortControllers.set(dialogProps, abortController);
+            dialogProps = factoryResult;
+            // AbortController를 dialogProps와 연결
+            abortControllers.set(dialogProps, abortController);
 
-                if (!hashManager.tryAddDialog(dialogProps)) {
-                  logger.warn("Duplicate dialog prevented");
-                  if (!isResolved) {
-                    isResolved = true;
-                    resolve(undefined);
-                  }
-                  return;
-                }
+            if (!hashManager.tryAddDialog(dialogProps)) {
+              logger.warn("Duplicate dialog prevented");
+              if (!isResolved) {
+                isResolved = true;
+                resolve(undefined);
+              }
+              return;
+            }
 
-                store.push(dialogProps);
-                notifyCallbacks();
-              })
-              .catch((error) => {
-                if (abortController.signal.aborted) return;
-
-                logger.error("Error in dialogFactory", error);
-                if (!isResolved) {
-                  isResolved = true;
-                  reject(error);
-                }
-              });
+            store.push(dialogProps);
+            notifyCallbacks();
           } catch (error) {
             logger.error("Error in dialogFactory", error);
             if (!isResolved) {
