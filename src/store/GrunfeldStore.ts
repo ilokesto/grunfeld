@@ -2,15 +2,16 @@ import { GrunfeldProps, isValidGrunfeldElement } from "../types";
 import { logger } from "../utils/logger";
 import { hashManager } from "./GrunfeldHashManager";
 
+type AddFunction = {
+  (dialogFactory: () => GrunfeldProps): void;
+  <T>(
+    dialogFactory: (removeWith: (data: T) => void) => GrunfeldProps
+  ): Promise<T>;
+};
 type Store = Array<GrunfeldProps>;
 type Callback = () => void;
 interface IGrunfeldStore {
-  add: {
-    (dialogFactory: () => GrunfeldProps): void;
-    <T>(
-      dialogFactory: (removeWith: (data: T) => void) => GrunfeldProps
-    ): Promise<T>;
-  };
+  add: AddFunction;
   remove(): void;
   clear(): void;
   getStore(): Store;
