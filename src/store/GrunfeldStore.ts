@@ -4,9 +4,9 @@ import { hashManager } from "./GrunfeldHashManager";
 
 type AddFunction = {
   (dialogFactory: () => GrunfeldProps): void;
-  <T>(
-    dialogFactory: (removeWith: (data: T) => void) => GrunfeldProps
-  ): Promise<T>;
+  <T>(dialogFactory: (removeWith: (data: T) => void) => GrunfeldProps): Promise<
+    T | undefined
+  >;
 };
 type Store = Array<GrunfeldProps>;
 type Callback = () => void;
