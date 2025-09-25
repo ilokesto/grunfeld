@@ -1,17 +1,10 @@
 import { useMemo, useSyncExternalStore } from "react";
 import { GrunfeldStore } from "../store/GrunfeldStore";
-import { GrunfeldProviderProps, isValidGrunfeldElement } from "../types";
+import { GrunfeldProviderProps } from "../types";
+import { getMergedProps } from "../utils/getMergedProps";
 import { Grunfeld } from "./Grunfeld";
 
-export function GrunfeldProvider({
-  children,
-  options = {
-    defaultPosition: "center",
-    defaultLightDismiss: true,
-    defaultRenderMode: "inline",
-    defaultBackdropStyle: { backgroundColor: "rgba(0, 0, 0, 0.3)" },
-  },
-}: GrunfeldProviderProps) {
+export function GrunfeldProvider({ children, options }: GrunfeldProviderProps) {
   const store = useSyncExternalStore(
     GrunfeldStore.subscribe,
     GrunfeldStore.getStore,
@@ -21,26 +14,11 @@ export function GrunfeldProvider({
   // 대화상자 렌더링 최적화
   const renderedDialogs = useMemo(() => {
     return store.map((props, index) => {
-      const { element, position, lightDismiss, renderMode, backdropStyle } =
-        isValidGrunfeldElement(props) ? props : { element: props };
+      const mergedProps = getMergedProps(props, options);
 
-      return (
-        <Grunfeld
-          key={index}
-          position={position ?? options.defaultPosition}
-          element={element}
-          lightDismiss={lightDismiss ?? options.defaultLightDismiss}
-          backdropStyle={backdropStyle ?? options.defaultBackdropStyle}
-          renderMode={renderMode ?? options.defaultRenderMode}
-        />
-      );
+      return <Grunfeld key={index} {...mergedProps} />;
     });
-  }, [
-    store,
-    options.defaultPosition,
-    options.defaultLightDismiss,
-    options.defaultBackdropStyle,
-  ]);
+  }, [store, options]);
 
   return (
     <>
