@@ -17,6 +17,7 @@ describe("backdropStyles utilities", () => {
         right: 0,
         left: 0,
         zIndex: 1000,
+        backgroundColor: "rgba(0, 0, 0, 0.5)",
       });
     });
 

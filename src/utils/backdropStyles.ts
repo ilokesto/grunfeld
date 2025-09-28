@@ -13,6 +13,8 @@ export function getModalBackdropStyles(
     right: 0,
     left: 0,
     zIndex: 1000,
+    // 기본 오버레이 색상을 제공하여 backdrop이 없는 것처럼 보이는 문제를 방지
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
   };
 
   if (!backdropStyle) {
