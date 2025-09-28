@@ -3,14 +3,12 @@ import { useFocusManagement, useGrunfeldBehavior } from "../hooks";
 import { GrunfeldElementProps } from "../types";
 import { getModalBackdropStyles, getPositionStyles } from "../utils";
 
-export function GrunfeldModal(props: GrunfeldElementProps) {
-  const {
-    element,
-    position = "center",
-    lightDismiss = true,
-    backdropStyle,
-  } = props;
-
+export function GrunfeldModal({
+  element,
+  position = "center",
+  lightDismiss = true,
+  backdropStyle,
+}: GrunfeldElementProps) {
   const elementRef = useRef<HTMLDivElement>(null);
 
   // 공통 행동 처리 (ESC, backdrop click)

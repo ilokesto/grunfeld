@@ -22,7 +22,7 @@ export function getMergedProps(
   };
 
   Object.keys(defaultProps).forEach((key) => {
-    const originalKey = key.replace("default", "") as string;
+    const originalKey = lowercaseFirst(key.replace("default", ""));
 
     // 유저가 지정한 값이 없으면 기본값 할당
     (propsFormUser as any)[key] ??= defaultProps[key as keyof Default];
@@ -32,4 +32,8 @@ export function getMergedProps(
   });
 
   return props;
+}
+
+function lowercaseFirst(str: string): string {
+  return str.charAt(0).toLowerCase() + str.slice(1);
 }

@@ -41,6 +41,8 @@ export function GrunfeldProvider({ children, options }: GrunfeldProviderProps) {
     return store.map((props, index) => {
       const mergedProps = getMergedProps(props, options);
 
+      console.log("Merged Dialog Props:", mergedProps);
+
       return <Grunfeld key={index} {...mergedProps} />;
     });
   }, [store, options]);
