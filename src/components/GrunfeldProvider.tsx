@@ -2,7 +2,8 @@ import { useEffect, useMemo, useSyncExternalStore } from "react";
 import { GrunfeldStore } from "../store/GrunfeldStore";
 import { GrunfeldProviderProps } from "../types";
 import { getMergedProps } from "../utils/getMergedProps";
-import { Grunfeld } from "./Grunfeld";
+import { GrunfeldDialog } from "./GrunfeldDialog";
+import { GrunfeldModal } from "./GrunfeldModal";
 
 export function GrunfeldProvider({ children, options }: GrunfeldProviderProps) {
   const store = useSyncExternalStore(
@@ -39,11 +40,11 @@ export function GrunfeldProvider({ children, options }: GrunfeldProviderProps) {
   // 대화상자 렌더링 최적화
   const renderedDialogs = useMemo(() => {
     return store.map((props, index) => {
-      const mergedProps = getMergedProps(props, options);
+      const { renderMode, ...mergedProps } = getMergedProps(props, options);
+      const Render =
+        renderMode === "top-layer" ? GrunfeldDialog : GrunfeldModal;
 
-      console.log("Merged Dialog Props:", mergedProps);
-
-      return <Grunfeld key={index} {...mergedProps} />;
+      return <Render key={index} {...mergedProps} />;
     });
   }, [store, options]);
 
