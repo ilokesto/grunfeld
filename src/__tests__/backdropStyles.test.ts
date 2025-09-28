@@ -2,44 +2,9 @@ import {
   convertBackdropStyleToCSS,
   createDialogBackdropManager,
   generateDialogClassName,
-  getModalBackdropStyles,
 } from "../utils/backdropStyles";
 
 describe("backdropStyles utilities", () => {
-  describe("getModalBackdropStyles", () => {
-    it("should return base styles when no backdropStyle provided", () => {
-      const styles = getModalBackdropStyles();
-
-      expect(styles).toEqual({
-        position: "fixed",
-        top: 0,
-        bottom: 0,
-        right: 0,
-        left: 0,
-        zIndex: 1000,
-      });
-    });
-
-    it("should merge backdropStyle with base styles", () => {
-      const backdropStyle = {
-        backgroundColor: "rgba(0, 0, 0, 0.5)",
-        zIndex: 2000,
-      };
-
-      const styles = getModalBackdropStyles(backdropStyle);
-
-      expect(styles).toEqual({
-        position: "fixed",
-        top: 0,
-        bottom: 0,
-        right: 0,
-        left: 0,
-        zIndex: 2000, // 덮어씌워짐
-        backgroundColor: "rgba(0, 0, 0, 0.5)",
-      });
-    });
-  });
-
   describe("convertBackdropStyleToCSS", () => {
     it("should convert camelCase to kebab-case", () => {
       const style = {

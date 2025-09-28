@@ -1,7 +1,7 @@
 import { useRef } from "react";
 import { useFocusManagement, useGrunfeldBehavior } from "../hooks";
 import { GrunfeldElementProps } from "../types";
-import { getModalBackdropStyles, getPositionStyles } from "../utils";
+import { getPositionStyles } from "../utils";
 
 export function GrunfeldModal({
   element,
@@ -24,7 +24,15 @@ export function GrunfeldModal({
 
   return (
     <div
-      style={getModalBackdropStyles(backdropStyle)}
+      style={{
+        position: "fixed",
+        top: 0,
+        bottom: 0,
+        right: 0,
+        left: 0,
+        zIndex: 1000,
+        ...backdropStyle,
+      }}
       onClick={handleBackdropClick}
     >
       <div

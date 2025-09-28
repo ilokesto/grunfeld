@@ -1,31 +1,6 @@
 import { BackdropStyle } from "../types";
 
 /**
- * Modal용 기본 백드롭 스타일을 생성합니다.
- */
-export function getModalBackdropStyles(
-  backdropStyle?: BackdropStyle
-): React.CSSProperties {
-  const baseStyles: React.CSSProperties = {
-    position: "fixed",
-    top: 0,
-    bottom: 0,
-    right: 0,
-    left: 0,
-    zIndex: 1000,
-  };
-
-  if (!backdropStyle) {
-    return baseStyles;
-  }
-
-  return {
-    ...baseStyles,
-    ...backdropStyle,
-  };
-}
-
-/**
  * Dialog의 backdrop 스타일을 CSS 문자열로 변환합니다.
  */
 export function convertBackdropStyleToCSS(
