@@ -2,21 +2,13 @@ import { GrunfeldElementProps } from "../types";
 import { getModalBackdropStyles } from "../utils";
 import { BaseGrunfeld } from "./BaseGrunfeld";
 
-export function GrunfeldModal({
-  element,
-  position = "center",
-  lightDismiss = true,
-  backdropStyle,
-}: GrunfeldElementProps) {
+export function GrunfeldModal(props: GrunfeldElementProps) {
   return (
     <BaseGrunfeld
-      element={element}
-      position={position}
-      lightDismiss={lightDismiss}
-      backdropStyle={backdropStyle}
+      {...props}
       renderStrategy={({ elementRef, handleBackdropClick, positionStyles }) => (
         <div
-          style={getModalBackdropStyles(backdropStyle)}
+          style={getModalBackdropStyles(props.backdropStyle)}
           onClick={handleBackdropClick}
         >
           <div
@@ -26,7 +18,7 @@ export function GrunfeldModal({
             aria-modal="true"
             tabIndex={-1}
           >
-            {element}
+            {props.element}
           </div>
         </div>
       )}
