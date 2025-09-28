@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useSyncExternalStore } from "react";
 import { GrunfeldStore } from "../store/GrunfeldStore";
 import { GrunfeldProviderProps } from "../types";
-import { getMergedProps } from "../utils/getMergedProps";
+import { getMergedProps } from "../utils";
 import { GrunfeldDialog } from "./GrunfeldDialog";
 import { GrunfeldModal } from "./GrunfeldModal";
 
