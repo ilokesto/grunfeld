@@ -185,6 +185,7 @@ export default {
   add: GrunfeldStore.add,
   remove: GrunfeldStore.remove,
   clear: GrunfeldStore.clear,
+  getStore: GrunfeldStore.getStore,
 };
 
 function dismissDialog(props: GrunfeldProps) {
