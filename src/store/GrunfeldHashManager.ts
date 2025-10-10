@@ -44,11 +44,15 @@ function safeStringify(obj: unknown): string {
 function serializeElementProps(
   props: GrunfeldElementProps
 ): Record<string, unknown> {
-  const { element, position, lightDismiss } = props;
+  const { element, position, lightDismiss, renderMode, backdropStyle } = props;
 
   return {
     position,
     lightDismiss,
+    renderMode,
+    backdropStyle: isSerializable(backdropStyle)
+      ? backdropStyle
+      : "[Non-serializable]",
     elementType: typeof element,
     elementProps: isReactElement(element)
       ? {
@@ -102,13 +106,19 @@ function generateFallbackHash(): string {
 
 export function generateDialogHash(dialog: GrunfeldProps): string {
   try {
-    if (isValidGrunfeldElement(dialog)) {
-      const serializedProps = serializeElementProps(dialog);
-      return createHash(serializedProps);
-    } else {
-      const serializedNode = serializeReactNode(dialog);
-      return createHash(serializedNode);
-    }
+    // Normalize dialog into a GrunfeldElementProps-like shape so hashing is stable
+    const normalized: GrunfeldElementProps = isValidGrunfeldElement(dialog)
+      ? ({ ...(dialog as GrunfeldElementProps) } as GrunfeldElementProps)
+      : ({ element: dialog } as GrunfeldElementProps);
+
+    // Fill defaults that getMergedProps would provide (keeps hash stable)
+    normalized.position ??= "center";
+    normalized.lightDismiss ??= true;
+    normalized.renderMode ??= "inline" as any;
+    normalized.backdropStyle ??= { backgroundColor: "rgba(0, 0, 0, 0.3)" };
+
+    const serializedProps = serializeElementProps(normalized);
+    return createHash(serializedProps);
   } catch (error) {
     logger.error("Unexpected error during hash generation", error);
     return generateFallbackHash();

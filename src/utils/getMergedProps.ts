@@ -11,8 +11,8 @@ export function getMergedProps(
   propsFormUser: Default = {}
 ) {
   const props = isValidGrunfeldElement(grunfeldComponentProps)
-    ? grunfeldComponentProps
-    : { element: grunfeldComponentProps };
+    ? ({ ...(grunfeldComponentProps as any) } as any)
+    : ({ element: grunfeldComponentProps } as any);
 
   const defaultProps = {
     defaultPosition: "center",
@@ -21,17 +21,22 @@ export function getMergedProps(
     defaultBackdropStyle: { backgroundColor: "rgba(0, 0, 0, 0.3)" },
   };
 
+  // Create a safe copy of user-provided defaults so we don't mutate the caller's object
+  const userDefaults: Record<string, unknown> = {
+    ...defaultProps,
+    ...(propsFormUser as any),
+  };
+
+  // Build a new result object without mutating original inputs
+  const result: Record<string, unknown> = { ...props };
+
   Object.keys(defaultProps).forEach((key) => {
     const originalKey = lowercaseFirst(key.replace("default", ""));
-
-    // 유저가 지정한 값이 없으면 기본값 할당
-    (propsFormUser as any)[key] ??= defaultProps[key as keyof Default];
-
-    // 최종 props에 유저가 지정한 값 또는 기본값 할당
-    (props as any)[originalKey] ??= propsFormUser[key as keyof Default];
+    // Use user-provided default if present, otherwise the library default
+    result[originalKey] ??= userDefaults[key as keyof Default];
   });
 
-  return props;
+  return result as any;
 }
 
 function lowercaseFirst(str: string): string {
