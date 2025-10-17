@@ -1,74 +1,79 @@
 import {
-  DynamicScenario,
+  ExecutableScenario,
   GrunfeldProps,
-  GrunfeldScenario,
   isValidGrunfeldElement,
-  RecursiveScenarioFactory,
-  RecursiveScenarioStep,
+  ScenarioControllerFactory,
   ScenarioDefinition,
-  ScenarioOptions,
+  ScenarioImplementationFunction,
 } from "../types";
 import { logger } from "../utils/logger";
 import { hashManager } from "./GrunfeldHashManager";
-import {
-  createRecursiveScenario,
-  createScenario,
-  createSeparatedRecursiveScenario,
-} from "./ScenarioManager";
+import { createScenario, createSeparatedScenario } from "./ScenarioManager";
 
-type AddFunction = {
+type DialogFactoryFunction = {
   (dialogFactory: () => GrunfeldProps): void;
   <T>(dialogFactory: (removeWith: (data: T) => void) => GrunfeldProps): Promise<
     T | undefined
   >;
 };
-type Store = Array<GrunfeldProps>;
-type Callback = () => void;
-interface IGrunfeldStore {
-  add: AddFunction;
+
+type DialogStore = Array<GrunfeldProps>;
+type StoreSubscriber = () => void;
+
+interface GrunfeldStoreInterface {
+  add: DialogFactoryFunction;
   remove(): void;
   clear(): void;
-  getStore(): Store;
-  subscribe(callback: Callback): Callback;
+  getStore(): DialogStore;
+  subscribe(subscriber: StoreSubscriber): StoreSubscriber;
 
+  /**
+   * 시나리오 생성 메서드 - 두 가지 패턴 지원
+   *
+   * 1. 기본 객체 방식:
+   *    grunfeld.scenario(name, definition)
+   *
+   * 2. 분리된 방식:
+   *    grunfeld.scenario(name, controllerFactory, implementation)
+   */
   scenario: {
-    // 기본 오버로드들은 유지
-    (
+    // 기본 객체 시나리오
+    <TDefinition extends ScenarioDefinition>(
       name: string,
-      definition: ScenarioDefinition,
-      options?: ScenarioOptions
-    ): GrunfeldScenario;
-    <T extends Record<string, RecursiveScenarioStep>>(
+      definition: TDefinition
+    ): ExecutableScenario<TDefinition>;
+
+    // 분리된 시나리오 (controllerFactory + implementation)
+    <
+      TImplementation extends ScenarioDefinition,
+      TController extends Record<string, ScenarioImplementationFunction>
+    >(
       name: string,
-      factory: RecursiveScenarioFactory<T>,
-      options?: ScenarioOptions
-    ): DynamicScenario<T>;
-    // 분리된 방식을 위한 any 오버로드
-    (
-      name: string,
-      controlFactory: any,
-      implementation: any,
-      options?: ScenarioOptions
-    ): any;
+      controllerFactory: ScenarioControllerFactory<
+        TImplementation,
+        TController
+      >,
+      implementation: TController
+    ): ExecutableScenario<TController>;
   };
 }
-function createGrunfeldStore(): IGrunfeldStore {
-  const callbacks = new Set<Callback>();
-  let store: Store = [];
+function createGrunfeldStore(): GrunfeldStoreInterface {
+  const subscribers = new Set<StoreSubscriber>();
+  let dialogStore: DialogStore = [];
   // Map을 사용하여 모든 타입의 GrunfeldProps를 키로 사용
   const abortControllers = new Map<GrunfeldProps, AbortController>();
 
   // 불필요한 배열 생성을 방지하는 최적화된 알림 함수
-  const notifyCallbacks = () => {
-    if (callbacks.size === 0) return;
+  const notifySubscribers = () => {
+    if (subscribers.size === 0) return;
 
     // 스토어의 참조만 변경하여 리렌더링 트리거
-    store = [...store];
-    callbacks.forEach((callback) => {
+    dialogStore = [...dialogStore];
+    subscribers.forEach((subscriber) => {
       try {
-        callback();
+        subscriber();
       } catch (error) {
-        logger.error("Error in store callback", error);
+        logger.error("Error in store subscriber", error);
       }
     });
   };
@@ -91,8 +96,8 @@ function createGrunfeldStore(): IGrunfeldStore {
             return;
           }
 
-          store.push(factoryResult);
-          notifyCallbacks();
+          dialogStore.push(factoryResult);
+          notifySubscribers();
         } catch (error) {
           logger.error("Error in dialogFactory", error);
         }
@@ -116,20 +121,20 @@ function createGrunfeldStore(): IGrunfeldStore {
             if (isResolved) return;
 
             try {
-              const index = store.indexOf(dialogProps);
+              const index = dialogStore.indexOf(dialogProps);
               if (index !== -1) {
                 hashManager.removeDialog(dialogProps);
-                store.splice(index, 1);
+                dialogStore.splice(index, 1);
                 dismissDialog(dialogProps);
                 // AbortController 정리
                 abortControllers.delete(dialogProps);
-                notifyCallbacks();
+                notifySubscribers();
               }
 
               isResolved = true;
               resolve(data);
             } catch (error) {
-              logger.error("Error in removeWith callback", error);
+              logger.error("Error in removeWith subscriber", error);
               if (!isResolved) {
                 isResolved = true;
                 reject(error);
@@ -156,8 +161,8 @@ function createGrunfeldStore(): IGrunfeldStore {
               return;
             }
 
-            store.push(dialogProps);
-            notifyCallbacks();
+            dialogStore.push(dialogProps);
+            notifySubscribers();
           } catch (error) {
             logger.error("Error in dialogFactory", error);
             if (!isResolved) {
@@ -170,7 +175,7 @@ function createGrunfeldStore(): IGrunfeldStore {
     },
 
     remove() {
-      const props = store.pop();
+      const props = dialogStore.pop();
       if (props) {
         hashManager.removeDialog(props);
 
@@ -182,13 +187,13 @@ function createGrunfeldStore(): IGrunfeldStore {
         }
 
         dismissDialog(props);
-        notifyCallbacks();
+        notifySubscribers();
       }
     },
 
     clear() {
       // 모든 pending Promise들을 abort로 정리
-      store.forEach((props) => {
+      dialogStore.forEach((props: GrunfeldProps) => {
         const abortController = abortControllers.get(props);
         if (abortController) {
           abortController.abort();
@@ -197,57 +202,54 @@ function createGrunfeldStore(): IGrunfeldStore {
         dismissDialog(props);
       });
 
-      store = [];
+      dialogStore = [];
       hashManager.clearAll();
-      notifyCallbacks();
+      notifySubscribers();
     },
 
-    getStore: () => store,
+    getStore: () => dialogStore,
 
-    subscribe(callback: Callback) {
-      callbacks.add(callback);
+    subscribe(subscriber: StoreSubscriber) {
+      subscribers.add(subscriber);
       return () => {
-        callbacks.delete(callback);
+        subscribers.delete(subscriber);
       };
     },
 
     scenario: (
       name: string,
-      definitionOrFactory: any,
-      implementationOrOptions?: any,
-      options?: ScenarioOptions
+      definitionOrControllerFactory: any,
+      implementation?: any
     ) => {
-      // 인자 개수로 판단: 4개면 분리된 재귀 방식
-      if (
-        arguments.length >= 4 ||
-        (arguments.length === 3 &&
-          implementationOrOptions &&
-          typeof implementationOrOptions === "object" &&
-          !implementationOrOptions.stepDelay &&
-          !implementationOrOptions.onStepStart)
-      ) {
-        // 분리된 재귀 팩토리 방식: scenario(name, controlFactory, implementation, options?)
-        return createSeparatedRecursiveScenario(
+      // 분리된 시나리오: 3개 인자 = scenario(name, factory, implementation)
+      if (implementation !== undefined) {
+        if (typeof definitionOrControllerFactory !== "function") {
+          throw new Error(
+            "Separated scenario requires controller factory function as second argument"
+          );
+        }
+        if (!implementation || typeof implementation !== "object") {
+          throw new Error(
+            "Separated scenario requires implementation object as third argument"
+          );
+        }
+        return createSeparatedScenario(
           name,
-          definitionOrFactory,
-          implementationOrOptions,
-          arguments.length === 4 ? options : undefined
-        );
-      } else if (typeof definitionOrFactory === "function") {
-        // 기존 재귀 팩토리 방식: scenario(name, factory, options?)
-        return createRecursiveScenario(
-          name,
-          definitionOrFactory,
-          implementationOrOptions
-        );
-      } else {
-        // 객체 정의 방식: scenario(name, definition, options?)
-        return createScenario(
-          name,
-          definitionOrFactory,
-          implementationOrOptions
+          definitionOrControllerFactory,
+          implementation
         );
       }
+
+      // 기본 객체 시나리오: 2개 인자 = scenario(name, definition)
+      if (typeof definitionOrControllerFactory === "function") {
+        throw new Error(
+          "Controller factory function alone is not supported. Use either:\n" +
+            "- Basic scenario: scenario(name, definition)\n" +
+            "- Separated scenario: scenario(name, controllerFactory, implementation)"
+        );
+      }
+
+      return createScenario(name, definitionOrControllerFactory);
     },
   };
 }
@@ -268,6 +270,6 @@ function dismissDialog(props: GrunfeldProps) {
       props.dismissCallback();
     }
   } catch (error) {
-    logger.error("Error in dismiss callback", error);
+    logger.error("Error in dismiss subscriber", error);
   }
 }

@@ -525,7 +525,11 @@ const InputDialog = ({ onSubmit }: { onSubmit: (value: string) => void }) => {
 
 복잡한 사용자 플로우를 단계별로 정의하고 관리할 수 있는 시나리오 기능입니다. 로그인, 결제, 온보딩 등의 다단계 프로세스를 체계적으로 구성할 수 있습니다.
 
-### 기본 사용법
+Grunfeld는 두 가지 시나리오 패턴을 지원합니다:
+
+### 1. 기본 객체 방식
+
+가장 간단하고 직관적인 방식으로, 객체 형태로 시나리오를 정의합니다.
 
 ```tsx
 // 로그인 시나리오 정의
@@ -554,12 +558,52 @@ const loginScenario = grunfeld.scenario("login", {
   },
 });
 
+// 사용법 - 동적 메서드 접근
+await loginScenario.showLoginForm(); // 특정 단계 실행
+await loginScenario.showLoading();
+await loginScenario.showSuccess();
+```
+
+### 2. 분리된 방식 (고급)
+
+제어 로직과 구현을 분리하여 더 복잡한 시나리오를 구성할 수 있습니다.
+
+```tsx
+// 분리된 시나리오 정의
+const advancedScenario = grunfeld.scenario(
+  "user-management",
+  // 제어 로직 (factory)
+  (cliche) => ({
+    processUser: async (user) => {
+      if (user.isPremium) {
+        await cliche.showPremiumContent();
+      } else {
+        await cliche.showBasicContent();
+      }
+      await cliche.logActivity();
+    },
+  }),
+  // 실제 구현 (implementation)
+  {
+    showPremiumContent: () => {
+      grunfeld.add(() => "프리미엄 콘텐츠");
+    },
+    showBasicContent: () => {
+      grunfeld.add(() => "기본 콘텐츠");
+    },
+    logActivity: () => {
+      console.log("사용자 활동 기록됨");
+    },
+  }
+);
+
 // 사용법
-await loginScenario.step("showLoginForm"); // 특정 단계 실행
-await loginScenario.run(); // 전체 시나리오 실행
+await advancedScenario.processUser({ isPremium: true });
 ```
 
 ### 매개변수가 있는 시나리오
+
+시나리오 단계에 매개변수를 전달하여 동적인 동작을 구현할 수 있습니다.
 
 ```tsx
 // 매개변수를 받는 시나리오 정의
@@ -579,20 +623,14 @@ const userScenario = grunfeld.scenario("user-flow", {
   },
 });
 
-// 개별 단계에 매개변수 전달
-await userScenario.step("welcomeUser", {
+// 개별 단계에 매개변수 전달 (동적 메서드 접근)
+await userScenario.welcomeUser({
   userName: "홍길동",
   userType: "관리자",
 });
 
-await userScenario.step("showDashboard", {
+await userScenario.showDashboard({
   permissions: ["read", "write", "admin"],
-});
-
-// 전체 시나리오에 단계별 매개변수 전달
-await userScenario.run({
-  welcomeUser: { userName: "김철수", userType: "일반사용자" },
-  showDashboard: { permissions: ["read"] },
 });
 ```
 

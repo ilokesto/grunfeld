@@ -1,53 +1,59 @@
 /**
+ * Grunfeld 시나리오 타입 정의
+ *
+ * 지원되는 API 패턴:
+ * 1. 기본 객체 방식: grunfeld.scenario(name, definition)
+ * 2. 분리된 방식: grunfeld.scenario(name, controllerFactory, implementation)
+ */
+
+/**
  * 시나리오 단계 함수 타입
  * 각 단계에서 실행할 작업을 정의 (매개변수 선택적으로 받을 수 있음)
  */
-export type ScenarioStep<T = any> = (params?: T) => void | Promise<void>;
+export type ScenarioStepFunction<TParams = any, TReturn = any> = (
+  params?: TParams
+) => TReturn;
 
 /**
  * 시나리오 정의 - 각 단계별 작업을 객체로 정의
+ * 기본 객체 방식에서 사용: { step1: () => {}, step2: () => {} }
  */
-export type ScenarioDefinition = Record<string, ScenarioStep>;
+export type ScenarioDefinition = Record<string, ScenarioStepFunction<any, any>>;
 
 /**
- * 재귀적 시나리오를 위한 단계 함수 타입
+ * 분리된 시나리오의 구현 단계 함수 타입
+ * 분리된 방식의 implementation에서 사용
  */
-export type RecursiveScenarioStep<T = any> = (
-  params?: T
-) => void | Promise<void>;
+export type ScenarioImplementationFunction<TParams = any, TReturn = any> = (
+  params?: TParams
+) => TReturn;
 
 /**
- * 재귀적 시나리오 팩토리 함수 타입
+ * 분리된 시나리오 컨트롤러 팩토리 함수 타입
+ *
+ * 분리된 방식: grunfeld.scenario(name, controllerFactory, implementation)
+ * - controllerFactory: 제어 로직을 정의하는 함수
+ * - implementation: 실제 구현을 담은 객체
+ * - implementationProxy: implementation의 메서드들을 가리키는 프록시 객체
+ *
+ * @param implementationProxy implementation의 메서드들에 대한 프록시
+ * @returns 실제로 노출될 시나리오 메서드들
  */
-export type RecursiveScenarioFactory<
-  T extends Record<string, RecursiveScenarioStep>
-> = (scenario: {
-  [K in keyof T]: (params?: Parameters<T[K]>[0]) => Promise<void>;
-}) => T;
+export type ScenarioControllerFactory<
+  TImplementation extends ScenarioDefinition,
+  TController extends Record<string, ScenarioImplementationFunction<any, any>>
+> = (implementationProxy: TImplementation) => TController;
 
 /**
- * 분리된 재귀적 시나리오 팩토리 함수 타입 (새로운 방식)
- * 2번째 인자: 호출 로직, 3번째 인자: 실제 구현
- */
-export type SeparatedRecursiveFactory<
-  T extends Record<string, RecursiveScenarioStep>
-> = (cliche: {
-  [K in keyof T]: (params?: Parameters<T[K]>[0]) => Promise<void>;
-}) => Partial<T>;
-
-/**
- * 시나리오 인스턴스
+ * 시나리오 인스턴스 인터페이스
  * 정의된 시나리오를 실행하고 관리하는 객체
  */
-export interface GrunfeldScenario {
+export interface ScenarioInstance {
   /** 시나리오 이름 */
   readonly name: string;
 
   /** 시나리오 정의 */
   readonly definition: ScenarioDefinition;
-
-  /** 특정 단계 실행 (매개변수 선택적 전달 가능) */
-  step<T = any>(stepName: string, params?: T): Promise<void>;
 
   /** 사용 가능한 단계 목록 조회 */
   getSteps(): string[];
@@ -56,23 +62,28 @@ export interface GrunfeldScenario {
   hasStep(stepName: string): boolean;
 
   /** 시나리오 복제 (새로운 인스턴스 생성) */
-  clone(newName?: string): GrunfeldScenario;
+  clone(newName?: string): ScenarioInstance;
 }
 
 /**
- * 동적 메서드 접근을 위한 시나리오 타입
+ * 실행 가능한 시나리오 타입
  * 각 단계를 메서드로 직접 호출할 수 있도록 함
+ * 원래 함수가 동기면 동기로, 비동기면 비동기로 반환 타입 유지
  */
-export type DynamicScenario<T extends ScenarioDefinition> = GrunfeldScenario & {
-  [K in keyof T]: T[K] extends ScenarioStep<infer P>
-    ? (params?: P) => Promise<void>
-    : never;
-};
+export type ExecutableScenario<TDefinition extends ScenarioDefinition> =
+  ScenarioInstance & {
+    [K in keyof TDefinition]: TDefinition[K] extends ScenarioStepFunction<
+      infer P,
+      infer R
+    >
+      ? (params?: P) => R
+      : never;
+  };
 
 /**
- * 시나리오 옵션
+ * 시나리오 실행 옵션
  */
-export interface ScenarioOptions {
+export interface ScenarioExecutionOptions {
   /** 단계 간 지연 시간 (밀리초, 기본값: 0) */
   stepDelay?: number;
 

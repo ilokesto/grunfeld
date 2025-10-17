@@ -3,12 +3,16 @@ import grunfeld from "./store/GrunfeldStore";
 
 // 타입들도 export
 export type {
+  ExecutableScenario,
   GrunfeldElementProps,
   GrunfeldProps,
-  GrunfeldScenario,
   Position,
+  ScenarioControllerFactory,
   ScenarioDefinition,
-  ScenarioOptions,
+  ScenarioExecutionOptions,
+  ScenarioImplementationFunction,
+  ScenarioInstance,
+  ScenarioStepFunction,
 } from "./types";
 
 // 주요 컴포넌트와 스토어 export

@@ -71,32 +71,32 @@ describe("ScenarioManager", () => {
     });
   });
 
-  describe("step method", () => {
-    it("should execute a single step with parameters", async () => {
+  describe("step method (removed - now private)", () => {
+    it("should have removed public step method in favor of dynamic access", () => {
+      const definition: ScenarioDefinition = {
+        testStep: jest.fn(),
+      };
+
+      const scenario = createScenario("step-removal-test", definition);
+
+      // step 메서드가 public API에서 제거되었는지 확인
+      expect((scenario as any).step).toBeUndefined();
+    });
+
+    it("should use dynamic method access instead of step method", async () => {
       const stepMock = jest.fn();
       const definition: ScenarioDefinition = {
         testStep: stepMock,
       };
 
-      const scenario = createScenario("single-step-test", definition);
+      const scenario = createScenario("dynamic-access-test", definition);
       const params = { test: "value" };
 
-      await scenario.step("testStep", params);
+      // 동적 메서드 접근 사용
+      await (scenario as any).testStep(params);
 
       expect(stepMock).toHaveBeenCalledWith(params);
       expect(stepMock).toHaveBeenCalledTimes(1);
-    });
-
-    it("should throw error for non-existent step", async () => {
-      const definition: ScenarioDefinition = {
-        existingStep: () => {},
-      };
-
-      const scenario = createScenario("error-test", definition);
-
-      await expect(scenario.step("nonExistentStep")).rejects.toThrow(
-        "Step 'nonExistentStep' not found in scenario 'error-test'"
-      );
     });
   });
 
