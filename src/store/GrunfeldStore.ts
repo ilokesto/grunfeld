@@ -1,6 +1,20 @@
-import { GrunfeldProps, isValidGrunfeldElement } from "../types";
+import {
+  DynamicScenario,
+  GrunfeldProps,
+  GrunfeldScenario,
+  isValidGrunfeldElement,
+  RecursiveScenarioFactory,
+  RecursiveScenarioStep,
+  ScenarioDefinition,
+  ScenarioOptions,
+} from "../types";
 import { logger } from "../utils/logger";
 import { hashManager } from "./GrunfeldHashManager";
+import {
+  createRecursiveScenario,
+  createScenario,
+  createSeparatedRecursiveScenario,
+} from "./ScenarioManager";
 
 type AddFunction = {
   (dialogFactory: () => GrunfeldProps): void;
@@ -16,8 +30,28 @@ interface IGrunfeldStore {
   clear(): void;
   getStore(): Store;
   subscribe(callback: Callback): Callback;
-}
 
+  scenario: {
+    // 기본 오버로드들은 유지
+    (
+      name: string,
+      definition: ScenarioDefinition,
+      options?: ScenarioOptions
+    ): GrunfeldScenario;
+    <T extends Record<string, RecursiveScenarioStep>>(
+      name: string,
+      factory: RecursiveScenarioFactory<T>,
+      options?: ScenarioOptions
+    ): DynamicScenario<T>;
+    // 분리된 방식을 위한 any 오버로드
+    (
+      name: string,
+      controlFactory: any,
+      implementation: any,
+      options?: ScenarioOptions
+    ): any;
+  };
+}
 function createGrunfeldStore(): IGrunfeldStore {
   const callbacks = new Set<Callback>();
   let store: Store = [];
@@ -176,6 +210,45 @@ function createGrunfeldStore(): IGrunfeldStore {
         callbacks.delete(callback);
       };
     },
+
+    scenario: (
+      name: string,
+      definitionOrFactory: any,
+      implementationOrOptions?: any,
+      options?: ScenarioOptions
+    ) => {
+      // 인자 개수로 판단: 4개면 분리된 재귀 방식
+      if (
+        arguments.length >= 4 ||
+        (arguments.length === 3 &&
+          implementationOrOptions &&
+          typeof implementationOrOptions === "object" &&
+          !implementationOrOptions.stepDelay &&
+          !implementationOrOptions.onStepStart)
+      ) {
+        // 분리된 재귀 팩토리 방식: scenario(name, controlFactory, implementation, options?)
+        return createSeparatedRecursiveScenario(
+          name,
+          definitionOrFactory,
+          implementationOrOptions,
+          arguments.length === 4 ? options : undefined
+        );
+      } else if (typeof definitionOrFactory === "function") {
+        // 기존 재귀 팩토리 방식: scenario(name, factory, options?)
+        return createRecursiveScenario(
+          name,
+          definitionOrFactory,
+          implementationOrOptions
+        );
+      } else {
+        // 객체 정의 방식: scenario(name, definition, options?)
+        return createScenario(
+          name,
+          definitionOrFactory,
+          implementationOrOptions
+        );
+      }
+    },
   };
 }
 
@@ -186,6 +259,7 @@ export default {
   remove: GrunfeldStore.remove,
   clear: GrunfeldStore.clear,
   getStore: GrunfeldStore.getStore,
+  scenario: GrunfeldStore.scenario,
 };
 
 function dismissDialog(props: GrunfeldProps) {

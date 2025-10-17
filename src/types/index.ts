@@ -1,6 +1,9 @@
 // 통합된 타입 가드 시스템
 export * from "./typeGuards";
 
+// 시나리오 타입
+export * from "./scenario";
+
 // 레거시 호환성을 위한 개별 export (deprecated)
 export {
   isReactElement,

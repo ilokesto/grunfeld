@@ -521,6 +521,156 @@ const InputDialog = ({ onSubmit }: { onSubmit: (value: string) => void }) => {
 };
 ```
 
+## 🎬 시나리오 (워크플로우)
+
+복잡한 사용자 플로우를 단계별로 정의하고 관리할 수 있는 시나리오 기능입니다. 로그인, 결제, 온보딩 등의 다단계 프로세스를 체계적으로 구성할 수 있습니다.
+
+### 기본 사용법
+
+```tsx
+// 로그인 시나리오 정의
+const loginScenario = grunfeld.scenario("login", {
+  showLoginForm: () => {
+    grunfeld.add(() => ({
+      element: <LoginForm />,
+      position: "center",
+    }));
+  },
+
+  showLoading: () => {
+    grunfeld.remove(); // 이전 단계 정리
+    grunfeld.add(() => ({
+      element: "Loading...",
+      position: "center",
+    }));
+  },
+
+  showSuccess: () => {
+    grunfeld.remove();
+    grunfeld.add(() => ({
+      element: "로그인 성공!",
+      position: "top-right",
+    }));
+  },
+});
+
+// 사용법
+await loginScenario.step("showLoginForm"); // 특정 단계 실행
+await loginScenario.run(); // 전체 시나리오 실행
+```
+
+### 매개변수가 있는 시나리오
+
+```tsx
+// 매개변수를 받는 시나리오 정의
+const userScenario = grunfeld.scenario("user-flow", {
+  welcomeUser: ({ userName, userType }) => {
+    grunfeld.add(() => ({
+      element: `${userName}님 (${userType}) 환영합니다!`,
+      position: "center",
+    }));
+  },
+
+  showDashboard: ({ permissions = [] }) => {
+    grunfeld.add(() => ({
+      element: `대시보드 (권한: ${permissions.join(", ")})`,
+      position: "center",
+    }));
+  },
+});
+
+// 개별 단계에 매개변수 전달
+await userScenario.step("welcomeUser", {
+  userName: "홍길동",
+  userType: "관리자",
+});
+
+await userScenario.step("showDashboard", {
+  permissions: ["read", "write", "admin"],
+});
+
+// 전체 시나리오에 단계별 매개변수 전달
+await userScenario.run({
+  welcomeUser: { userName: "김철수", userType: "일반사용자" },
+  showDashboard: { permissions: ["read"] },
+});
+```
+
+### 사용자 입력이 있는 시나리오
+
+```tsx
+const registrationScenario = grunfeld.scenario("registration", {
+  getUserName: async () => {
+    const name = await grunfeld.add<string>((removeWith) => ({
+      element: (
+        <div>
+          <h3>이름을 입력하세요</h3>
+          <input
+            type="text"
+            onKeyPress={(e) => {
+              if (e.key === "Enter") {
+                removeWith(e.target.value);
+              }
+            }}
+          />
+        </div>
+      ),
+      position: "center",
+    }));
+
+    console.log("입력받은 이름:", name);
+    return name;
+  },
+
+  confirmData: async () => {
+    const confirmed = await grunfeld.add<boolean>((removeWith) => ({
+      element: (
+        <div>
+          <p>정보가 맞습니까?</p>
+          <button onClick={() => removeWith(true)}>확인</button>
+          <button onClick={() => removeWith(false)}>취소</button>
+        </div>
+      ),
+      position: "center",
+    }));
+
+    if (!confirmed) {
+      throw new Error("사용자가 취소했습니다");
+    }
+  },
+});
+```
+
+### 시나리오 옵션
+
+```tsx
+const advancedScenario = grunfeld.scenario(
+  "advanced",
+  {
+    step1: () => console.log("1단계"),
+    step2: () => {
+      throw new Error("오류 발생");
+    },
+    step3: () => console.log("3단계"),
+  },
+  {
+    stopOnError: false, // 오류 발생 시에도 계속 진행
+    stepDelay: 1000, // 단계 간 1초 지연
+    onStepStart: (stepName) => console.log(`시작: ${stepName}`),
+    onStepEnd: (stepName) => console.log(`완료: ${stepName}`),
+    onStepError: (stepName, error) => console.log(`오류: ${stepName}`),
+  }
+);
+```
+
+### 시나리오 API
+
+- `scenario.step(stepName, params?)` - 특정 단계 실행 (매개변수 선택적 전달)
+- `scenario.run(paramsMap?)` - 모든 단계 순차 실행 (단계별 매개변수 맵 선택적 전달)
+- `scenario.getSteps()` - 사용 가능한 단계 목록
+- `scenario.hasStep(stepName)` - 단계 존재 여부 확인
+- `scenario.clone(newName?)` - 시나리오 복제
+
 ## 📋 API 참조
 
 ### `grunfeld.add<T>(dialogFactory)`

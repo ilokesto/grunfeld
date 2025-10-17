@@ -521,6 +521,156 @@ const InputDialog = ({ onSubmit }: { onSubmit: (value: string) => void }) => {
 };
 ```
 
+## 🎬 Scenarios (Workflows)
+
+Scenarios allow you to define and manage complex user flows step by step. Perfect for organizing multi-step processes like login, payment, onboarding, etc.
+
+### Basic Usage
+
+```tsx
+// Define login scenario
+const loginScenario = grunfeld.scenario("login", {
+  showLoginForm: () => {
+    grunfeld.add(() => ({
+      element: <LoginForm />,
+      position: "center",
+    }));
+  },
+
+  showLoading: () => {
+    grunfeld.remove(); // Clean up previous step
+    grunfeld.add(() => ({
+      element: "Loading...",
+      position: "center",
+    }));
+  },
+
+  showSuccess: () => {
+    grunfeld.remove();
+    grunfeld.add(() => ({
+      element: "Login successful!",
+      position: "top-right",
+    }));
+  },
+});
+
+// Usage
+await loginScenario.step("showLoginForm"); // Execute specific step
+await loginScenario.run(); // Execute entire scenario
+```
+
+### Scenarios with Parameters
+
+```tsx
+// Define scenario that accepts parameters
+const userScenario = grunfeld.scenario("user-flow", {
+  welcomeUser: ({ userName, userType }) => {
+    grunfeld.add(() => ({
+      element: `Welcome ${userName} (${userType})!`,
+      position: "center",
+    }));
+  },
+
+  showDashboard: ({ permissions = [] }) => {
+    grunfeld.add(() => ({
+      element: `Dashboard (permissions: ${permissions.join(", ")})`,
+      position: "center",
+    }));
+  },
+});
+
+// Pass parameters to individual steps
+await userScenario.step("welcomeUser", {
+  userName: "John Doe",
+  userType: "Admin",
+});
+
+await userScenario.step("showDashboard", {
+  permissions: ["read", "write", "admin"],
+});
+
+// Pass parameters to entire scenario
+await userScenario.run({
+  welcomeUser: { userName: "Jane Smith", userType: "User" },
+  showDashboard: { permissions: ["read"] },
+});
+```
+
+### Scenarios with User Input
+
+```tsx
+const registrationScenario = grunfeld.scenario("registration", {
+  getUserName: async () => {
+    const name = await grunfeld.add<string>((removeWith) => ({
+      element: (
+        <div>
+          <h3>Enter your name</h3>
+          <input
+            type="text"
+            onKeyPress={(e) => {
+              if (e.key === "Enter") {
+                removeWith(e.target.value);
+              }
+            }}
+          />
+        </div>
+      ),
+      position: "center",
+    }));
+
+    console.log("Received name:", name);
+    return name;
+  },
+
+  confirmData: async () => {
+    const confirmed = await grunfeld.add<boolean>((removeWith) => ({
+      element: (
+        <div>
+          <p>Is this information correct?</p>
+          <button onClick={() => removeWith(true)}>Confirm</button>
+          <button onClick={() => removeWith(false)}>Cancel</button>
+        </div>
+      ),
+      position: "center",
+    }));
+
+    if (!confirmed) {
+      throw new Error("User cancelled");
+    }
+  },
+});
+```
+
+### Scenario Options
+
+```tsx
+const advancedScenario = grunfeld.scenario(
+  "advanced",
+  {
+    step1: () => console.log("Step 1"),
+    step2: () => {
+      throw new Error("Error occurred");
+    },
+    step3: () => console.log("Step 3"),
+  },
+  {
+    stopOnError: false, // Continue even if errors occur
+    stepDelay: 1000, // 1 second delay between steps
+    onStepStart: (stepName) => console.log(`Starting: ${stepName}`),
+    onStepEnd: (stepName) => console.log(`Completed: ${stepName}`),
+    onStepError: (stepName, error) => console.log(`Error in: ${stepName}`),
+  }
+);
+```
+
+### Scenario API
+
+- `scenario.step(stepName, params?)` - Execute specific step (with optional parameters)
+- `scenario.run(paramsMap?)` - Execute all steps sequentially (with optional parameter map)
+- `scenario.getSteps()` - Get available step names
+- `scenario.hasStep(stepName)` - Check if step exists
+- `scenario.clone(newName?)` - Clone scenario
+
 ## 📋 API Reference
 
 ### `grunfeld.add<T>(dialogFactory)`
