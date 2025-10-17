@@ -508,4 +508,48 @@ describe("GrunfeldHashManager", () => {
       Math.random = originalMathRandom;
     });
   });
+
+  describe("hash consistency for object vs function syntax", () => {
+    it("should generate same hash for object and function syntax with same element", () => {
+      // React component for testing
+      const TestComponent = ({ removeWith }: any) =>
+        React.createElement("div", {}, "Test Modal");
+
+      // Test case 1: function syntax returning React element directly
+      const directElementSyntax = () =>
+        React.createElement(TestComponent, { removeWith: () => {} });
+
+      // Test case 2: function syntax returning object with element property
+      const objectSyntax = () => ({
+        element: React.createElement(TestComponent, { removeWith: () => {} }),
+      });
+
+      const hash1 = generateDialogHash(directElementSyntax());
+      const hash2 = generateDialogHash(objectSyntax());
+
+      expect(hash1).toBe(hash2);
+    });
+
+    it("should generate consistent hashes for add and remove operations", () => {
+      // Mock btoa to return consistent results
+      mockBtoa.mockImplementation((str) => Buffer.from(str).toString("base64"));
+
+      const TestComponent = ({ removeWith }: any) =>
+        React.createElement("div", {}, "Subscribe Modal");
+
+      // Simulate the two different syntaxes from the user's issue
+      const directSyntax = React.createElement(TestComponent, {
+        removeWith: () => {},
+      });
+      const objectSyntax = {
+        element: React.createElement(TestComponent, { removeWith: () => {} }),
+      };
+
+      const hash1 = generateDialogHash(directSyntax);
+      const hash2 = generateDialogHash(objectSyntax);
+
+      // These should be the same because getMergedProps normalizes them
+      expect(hash1).toBe(hash2);
+    });
+  });
 });

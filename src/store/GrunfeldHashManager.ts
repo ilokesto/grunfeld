@@ -3,8 +3,8 @@ import {
   GrunfeldProps,
   isReactElement,
   isSerializable,
-  isValidGrunfeldElement,
 } from "../types";
+import { getMergedProps } from "../utils/getMergedProps";
 import { logger } from "../utils/logger";
 
 const dialogHashes = new Set<string>();
@@ -68,7 +68,7 @@ function serializeElementProps(
 /**
  * React.ReactNode에서 해시 생성용 데이터를 추출합니다.
  */
-function serializeReactNode(node: React.ReactNode): Record<string, unknown> {
+function serializeReactNode(node: any): Record<string, unknown> {
   if (isReactElement(node)) {
     return {
       type: typeof node.type === "string" ? node.type : "[Component]",
@@ -106,16 +106,17 @@ function generateFallbackHash(): string {
 
 export function generateDialogHash(dialog: GrunfeldProps): string {
   try {
-    // Normalize dialog into a GrunfeldElementProps-like shape so hashing is stable
-    const normalized: GrunfeldElementProps = isValidGrunfeldElement(dialog)
-      ? ({ ...(dialog as GrunfeldElementProps) } as GrunfeldElementProps)
-      : ({ element: dialog } as GrunfeldElementProps);
+    // getMergedProps를 사용하여 실제 렌더링 시와 동일한 props를 생성
+    const mergedProps = getMergedProps(dialog);
 
-    // Fill defaults that getMergedProps would provide (keeps hash stable)
-    normalized.position ??= "center";
-    normalized.lightDismiss ??= true;
-    normalized.renderMode ??= "inline" as any;
-    normalized.backdropStyle ??= { backgroundColor: "rgba(0, 0, 0, 0.3)" };
+    // GrunfeldElementProps 형태로 변환
+    const normalized: GrunfeldElementProps = {
+      element: mergedProps.element,
+      position: mergedProps.position,
+      lightDismiss: mergedProps.lightDismiss,
+      renderMode: mergedProps.renderMode,
+      backdropStyle: mergedProps.backdropStyle,
+    };
 
     const serializedProps = serializeElementProps(normalized);
     return createHash(serializedProps);
