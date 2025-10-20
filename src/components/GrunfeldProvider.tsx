@@ -81,7 +81,7 @@ export function GrunfeldProvider({ children, options }: GrunfeldProviderProps) {
       // index 대신 고유한 키 사용 (성능 개선)
       return <Component key={`dialog-${index}`} {...mergedProps} />;
     });
-  }, [store, options]);
+  }, [store.length, options]);
 
   return (
     <>

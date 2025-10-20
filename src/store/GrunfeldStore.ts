@@ -95,6 +95,8 @@ function createGrunfeldStore(): GrunfeldStoreInterface {
           }
 
           dialogStore.push(factoryResult);
+          // 새 참조를 만들어 useSyncExternalStore가 변경을 감지하도록 함
+          dialogStore = [...dialogStore];
           notifySubscribers();
         } catch (error) {
           logger.error("Error in dialogFactory", error);
@@ -126,6 +128,8 @@ function createGrunfeldStore(): GrunfeldStoreInterface {
                 dismissDialog(dialogProps);
                 // AbortController 정리
                 abortControllers.delete(dialogProps);
+                // splice로 내부 배열 변경이 발생했으므로 새로운 참조로 갱신
+                dialogStore = [...dialogStore];
                 notifySubscribers();
               }
 
@@ -160,6 +164,8 @@ function createGrunfeldStore(): GrunfeldStoreInterface {
             }
 
             dialogStore.push(dialogProps);
+            // 새 참조로 변경
+            dialogStore = [...dialogStore];
             notifySubscribers();
           } catch (error) {
             logger.error("Error in dialogFactory", error);
@@ -185,6 +191,8 @@ function createGrunfeldStore(): GrunfeldStoreInterface {
         }
 
         dismissDialog(props);
+        // pop으로 내부 변경이 발생했으므로 새로운 참조로 갱신
+        dialogStore = [...dialogStore];
         notifySubscribers();
       }
     },
@@ -201,6 +209,8 @@ function createGrunfeldStore(): GrunfeldStoreInterface {
       });
 
       dialogStore = [];
+      // 새 참조로 변경
+      dialogStore = [...dialogStore];
       hashManager.clearAll();
       notifySubscribers();
     },
