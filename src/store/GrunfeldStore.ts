@@ -63,12 +63,10 @@ function createGrunfeldStore(): GrunfeldStoreInterface {
   // Map을 사용하여 모든 타입의 GrunfeldProps를 키로 사용
   const abortControllers = new Map<GrunfeldProps, AbortController>();
 
-  // 불필요한 배열 생성을 방지하는 최적화된 알림 함수
+  // 최적화된 알림 함수 - 구독자가 있을 때만 실행
   const notifySubscribers = () => {
     if (subscribers.size === 0) return;
 
-    // 스토어의 참조만 변경하여 리렌더링 트리거
-    dialogStore = [...dialogStore];
     subscribers.forEach((subscriber) => {
       try {
         subscriber();

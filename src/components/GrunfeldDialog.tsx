@@ -1,8 +1,9 @@
+import { memo } from "react";
 import { useDialog } from "../hooks/useGrunfeldDialog";
 import { GrunfeldElementProps } from "../types";
 import { getPositionStyles } from "../utils";
 
-export function GrunfeldDialog({
+export const GrunfeldDialog = memo(function GrunfeldDialog({
   element,
   position = "center",
   lightDismiss = true,
@@ -32,4 +33,4 @@ export function GrunfeldDialog({
       <div style={getPositionStyles(position, true)}>{element}</div>
     </dialog>
   );
-}
+});

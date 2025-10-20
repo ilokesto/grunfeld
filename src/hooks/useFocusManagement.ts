@@ -19,12 +19,24 @@ export function useFocusManagement<T extends HTMLElement>(
       'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
     );
 
-    // 첫 번째 포커스 가능한 요소에 포커스
-    if (focusableElements.length > 0) {
-      (focusableElements[0] as HTMLElement).focus();
-    } else {
-      // 포커스 가능한 요소가 없으면 컨테이너 자체에 포커스
-      element.focus();
+    // 첫 번째 포커스 가능한 요소에 포커스 (스크롤 발생 방지)
+    const firstFocusable =
+      focusableElements.length > 0
+        ? (focusableElements[0] as HTMLElement)
+        : null;
+    try {
+      if (firstFocusable && typeof firstFocusable.focus === "function") {
+        firstFocusable.focus({ preventScroll: true } as FocusOptions);
+      } else if (typeof element.focus === "function") {
+        element.focus({ preventScroll: true } as FocusOptions);
+      }
+    } catch (e) {
+      // 일부 환경(구형 브라우저/테스트 환경)에서는 옵션을 받지 못할 수 있으므로 폴백
+      if (firstFocusable && typeof firstFocusable.focus === "function") {
+        firstFocusable.focus();
+      } else if (typeof element.focus === "function") {
+        element.focus();
+      }
     }
 
     // 포커스 트래핑 (Tab 키 순환)
@@ -62,7 +74,11 @@ export function useFocusManagement<T extends HTMLElement>(
         previousActiveElement &&
         typeof previousActiveElement.focus === "function"
       ) {
-        previousActiveElement.focus();
+        try {
+          previousActiveElement.focus({ preventScroll: true } as FocusOptions);
+        } catch (e) {
+          previousActiveElement.focus();
+        }
       }
     };
   }, [elementRef]);
