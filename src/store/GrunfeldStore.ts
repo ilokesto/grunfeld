@@ -36,26 +36,19 @@ interface GrunfeldStoreInterface {
    * 2. 분리된 방식:
    *    grunfeld.scenario(name, controllerFactory, implementation)
    */
-  scenario: {
-    // 기본 객체 시나리오
-    <TDefinition extends ScenarioDefinition>(
-      name: string,
-      definition: TDefinition
-    ): ExecutableScenario<TDefinition>;
+  scenario<TDefinition extends ScenarioDefinition>(
+    name: string,
+    definition: TDefinition
+  ): ExecutableScenario<TDefinition>;
 
-    // 분리된 시나리오 (controllerFactory + implementation)
-    <
-      TImplementation extends ScenarioDefinition,
-      TController extends Record<string, ScenarioImplementationFunction>
-    >(
-      name: string,
-      controllerFactory: ScenarioControllerFactory<
-        TImplementation,
-        TController
-      >,
-      implementation: TController
-    ): ExecutableScenario<TController>;
-  };
+  scenario<
+    TImplementation extends ScenarioDefinition,
+    TController extends Record<string, ScenarioImplementationFunction>
+  >(
+    name: string,
+    controllerFactory: ScenarioControllerFactory<TImplementation, TController>,
+    implementation: TController
+  ): ExecutableScenario<TController>;
 }
 function createGrunfeldStore(): GrunfeldStoreInterface {
   const subscribers = new Set<StoreSubscriber>();
@@ -224,13 +217,13 @@ function createGrunfeldStore(): GrunfeldStoreInterface {
       };
     },
 
-    scenario: (<TDefinition extends ScenarioDefinition>(
+    scenario<TDefinition extends ScenarioDefinition>(
       name: string,
       definitionOrControllerFactory:
         | TDefinition
         | ScenarioControllerFactory<any, any>,
       implementation?: any
-    ): ExecutableScenario<TDefinition> => {
+    ): ExecutableScenario<TDefinition> {
       // 분리된 시나리오: 3개 인자 = scenario(name, factory, implementation)
       if (implementation !== undefined) {
         if (typeof definitionOrControllerFactory !== "function") {
@@ -260,7 +253,7 @@ function createGrunfeldStore(): GrunfeldStoreInterface {
       }
 
       return createScenario(name, definitionOrControllerFactory as TDefinition);
-    }) as GrunfeldStoreInterface["scenario"],
+    },
   };
 }
 
