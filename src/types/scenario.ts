@@ -72,11 +72,10 @@ export interface ScenarioInstance {
  */
 export type ExecutableScenario<TDefinition extends ScenarioDefinition> =
   ScenarioInstance & {
-    [K in keyof TDefinition]: TDefinition[K] extends ScenarioStepFunction<
-      infer P,
-      infer R
-    >
-      ? (params?: P) => R
+    [K in keyof TDefinition]: TDefinition[K] extends (
+      ...args: infer Args
+    ) => infer R
+      ? (...args: Args) => R
       : never;
   };
 
