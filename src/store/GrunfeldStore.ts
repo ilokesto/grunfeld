@@ -224,11 +224,13 @@ function createGrunfeldStore(): GrunfeldStoreInterface {
       };
     },
 
-    scenario: (
+    scenario: (<TDefinition extends ScenarioDefinition>(
       name: string,
-      definitionOrControllerFactory: any,
+      definitionOrControllerFactory:
+        | TDefinition
+        | ScenarioControllerFactory<any, any>,
       implementation?: any
-    ) => {
+    ): ExecutableScenario<TDefinition> => {
       // 분리된 시나리오: 3개 인자 = scenario(name, factory, implementation)
       if (implementation !== undefined) {
         if (typeof definitionOrControllerFactory !== "function") {
@@ -243,9 +245,9 @@ function createGrunfeldStore(): GrunfeldStoreInterface {
         }
         return createSeparatedScenario(
           name,
-          definitionOrControllerFactory,
+          definitionOrControllerFactory as ScenarioControllerFactory<any, any>,
           implementation
-        );
+        ) as ExecutableScenario<TDefinition>;
       }
 
       // 기본 객체 시나리오: 2개 인자 = scenario(name, definition)
@@ -257,8 +259,8 @@ function createGrunfeldStore(): GrunfeldStoreInterface {
         );
       }
 
-      return createScenario(name, definitionOrControllerFactory);
-    },
+      return createScenario(name, definitionOrControllerFactory as TDefinition);
+    }) as GrunfeldStoreInterface["scenario"],
   };
 }
 
