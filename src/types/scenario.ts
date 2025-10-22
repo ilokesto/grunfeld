@@ -17,8 +17,9 @@ export type ScenarioStepFunction<TParams = any, TReturn = any> = (
 /**
  * 시나리오 정의 - 각 단계별 작업을 객체로 정의
  * 기본 객체 방식에서 사용: { step1: () => {}, step2: () => {} }
+ * 모든 함수 시그니처를 허용 (required/optional params 모두 지원)
  */
-export type ScenarioDefinition = Record<string, ScenarioStepFunction<any, any>>;
+export type ScenarioDefinition = Record<string, (...args: any[]) => any>;
 
 /**
  * 분리된 시나리오의 구현 단계 함수 타입
